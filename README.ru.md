@@ -33,7 +33,7 @@ Claude Brain реализует 5 уровней защиты:
 ### Установка (один раз)
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/claude-brain.git
+git clone https://github.com/bogdan-cool-coder/claude-brain.git
 cd claude-brain
 bash install.sh
 ```

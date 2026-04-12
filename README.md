@@ -33,7 +33,7 @@ After compaction, Claude immediately reads SESSION_STATE.md, finds the current s
 ### Install (one time)
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/claude-brain.git
+git clone https://github.com/bogdan-cool-coder/claude-brain.git
 cd claude-brain
 bash install.sh
 ```
