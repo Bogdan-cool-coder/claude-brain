@@ -97,6 +97,9 @@ compression_count: 0
 ## Changed files
 | File | Change | Status |
 |------|--------|--------|
+## Verified/Found
+| What searched | Where found | Key detail |
+|---------------|-------------|------------|
 ## Solutions
 | Solution | Why | Rejected |
 |----------|-----|---------|
@@ -142,11 +145,41 @@ E: Find → in plan → execute THAT step
 
 Before saving: "Next action" contains filename + action, exactly one line with →, `last_updated` is current. Invalid STATE — rewrite it.
 
-## 5. WORK PROTOCOL
+## 5. TOKEN ECONOMY RULES
+
+> Based on community research (700K+ tokens saved). See: github.com/anthropics/claude-code/issues/13579
+
+### grep-before-implement (saves 70K tokens per incident)
+
+**BEFORE writing any new code or feature:**
+```
+grep -r "feature_keyword" src/    # 100 tokens
+read matching files                # 2K tokens
+ask user if unclear                # 500 tokens
+# TOTAL: ~2.6K vs 70K if you build something that already exists
+```
+
+**RULE:** Never implement functionality without first searching the codebase for existing implementations. `grep` (100 tokens) is ALWAYS cheaper than building from scratch (70K tokens).
+
+### Minimize CLI output waste
+
+- Use `--quiet`, `--no-verbose`, `| tail -n 20` for build/test commands
+- Don't dump entire file contents if you only need specific lines
+- `grep -n` to find line numbers, then read only that range
+
+### After compaction — verify investigation state
+
+After compaction, your behavioral pattern may shift from careful (Read→Read→Read→Edit) to reckless (Edit→Edit). Before any Edit after compaction:
+1. Read STATE — what was already investigated?
+2. Read the "Verified/Found" section — what files/code were already located?
+3. Only then proceed with changes
+
+## 6. WORK PROTOCOL
 
 ```
 STEP 0 → Read STATE. Unfinished task? Ask user.
 STEP 1 → Identify modules. Read 02/ + 07/ for them. Large: also 08/ + 01/.
+STEP 1.5 → grep codebase for existing implementations before writing new code.
 STEP 2 → Write plan in STATE (steps = specific actions with filenames).
          Batch: first → ACTIVE, rest → queue.
 STEP 3 → Execute. BEFORE step → move →. AFTER → mark [x].
@@ -156,7 +189,7 @@ STEP 5 → Rotate STATE: clear, next from queue → ACTIVE → STEP 1.
 
 Templates → `10 — Процесс Разработки/TEMPLATES.md`
 
-## 6. ABSOLUTE RULES
+## 7. ABSOLUTE RULES
 
 1. STATE updated BEFORE and AFTER each step
 2. First action on startup = read STATE
@@ -173,3 +206,5 @@ Templates → `10 — Процесс Разработки/TEMPLATES.md`
 13. Every 5 messages → update STATE (desktop only)
 14. Every long action → save STATE before (desktop only)
 15. Compaction recovery → read section 4 first (desktop only)
+16. grep before implement — ALWAYS search codebase before writing new code
+17. After compaction — read "Verified/Found" in STATE before any Edit

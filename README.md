@@ -116,7 +116,15 @@ Obsidian Vault/MyProject/
 
 ### SESSION_STATE.md
 
-The heart of the system — tracks current task, plan (with → marking active step), changed files, decisions, and next action.
+The heart of the system — tracks current task, plan (with → marking active step), changed files, **verified/found code** (prevents duplicate searches after compaction), decisions, and next action.
+
+### Token Economy Rules (NEW in v1.1)
+
+Based on [community research](https://github.com/anthropics/claude-code/issues/13579) documenting 700K+ tokens wasted across common patterns:
+
+- **grep-before-implement** — always search codebase before writing new code. `grep` costs 100 tokens vs 70K for reimplementing existing functionality
+- **Verified/Found section** in STATE — tracks what was already searched and found, preventing duplicate investigation after compaction
+- **Post-compaction drift protection** — explicit rule to read STATE and Verified/Found before any Edit after compaction, countering the behavioral shift from careful (Read→Read→Edit) to reckless (Edit→Edit)
 
 ### Hook Flow (CLI)
 
