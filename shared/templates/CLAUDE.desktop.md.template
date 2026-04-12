@@ -1,0 +1,175 @@
+# CLAUDE.md — {{ PROJECT_NAME }} (Desktop Version)
+
+> Obsidian Vault = external memory. Here only paths, rules, and protocol.
+> Record templates → `10 — Процесс Разработки/TEMPLATES.md`
+
+## 1. PATHS
+
+```
+VAULT    = "{{ VAULT_PATH }}"
+REPO     = "{{ REPO_PATH }}"
+STATE    = "$VAULT/03 — Активная Разработка и Детали Текущих Задач/SESSION_STATE.md"
+```
+
+## 2. VAULT MAP
+
+| Folder | Contents | When to read |
+|--------|----------|--------------|
+| `00` | README, stack, versions | Start of new context |
+| `01` | Architecture, API, DB | Tasks affecting architecture |
+| `02/YYYY-MM/` | History of ALL changes | **MANDATORY** before modifying module |
+| `03` | **SESSION_STATE.md**, WIP | **FIRST THING** on every startup |
+| `04` | Bug breakdowns | Working with module that had bugs |
+| `05` | Tech debt, risks | Refactoring, large tasks |
+| `06` | Ideas, feature requests | Planning functionality |
+| `07` | Module documentation | **MANDATORY** before modifying module |
+| `08` | Snippets, patterns | Writing new code |
+| `09` | Servers, CI/CD, deploy | Infrastructure tasks |
+| `10` | Git-flow, standards, **TEMPLATES.md** | PR, commits, vault records |
+
+## 3. CRITICAL RULES
+
+> Details and code examples → `01/` and `08/`. Here — reminders.
+
+| # | Rule | Consequence of violation |
+|---|------|--------------------------|
+| 1 | `Number()` around every `Decimal` from Prisma | string concat, `[object Object]` |
+| 2 | `isDeleted: false` in EVERY transaction query | show deleted data |
+| 3 | `householdId` in EVERY DB query | data leakage between households |
+| 4 | Multi-writes via `$transaction(async (tx) => ...)` | partial writes |
+| 5 | After credit account balance → `recalcCreditBalance()` | broken dashboard |
+| 6 | Balance changes → `changeLog` in same transaction | audit loss |
+| 7 | Prisma v6: `$extends()`, `Prisma.JsonNull` | TS errors |
+| 8 | `createdBy`=userId(JWT), `memberId`=UserProfile.id | wrong profile |
+| 9 | Switching from transfer → null `transferToAccountId/Amount` | dangling refs |
+| 10 | `Date` → `.toISOString()` before JSON | invalid dates |
+
+**Before commit:** `cd packages/backend && npx tsc --noEmit && cd ../.. && pnpm test && pnpm format:check`
+
+## 4. CONTINUITY PROTOCOL
+
+> **CRITICAL: Desktop version has NO hooks.** Claude MUST manually self-preserve context.
+
+### Desktop vs CLI
+
+| Aspect | CLI | Desktop |
+|--------|-----|---------|
+| PreCompact hook | Yes, saves context | NO - manual only |
+| PostCompact hook | Yes, injects context | NO - manual only |
+| Self-preservation | Optional | **REQUIRED** |
+| Backup interval | Automatic (hooks) | Every 5 min (launchd) |
+| Recovery trigger | PostCompact hook | Manual by Claude |
+
+### CRITICAL: Manual Context Self-Preservation (Desktop Only)
+
+Hooks DON'T WORK in Desktop Code tab. These rules are your ONLY protection against context loss.
+
+**EVERY 5 MESSAGES** — update STATE (last_updated, plan progress, changed files). No exceptions.
+
+**BEFORE ANY LONG ACTION** (code generation >50 lines, refactoring, multi-file edits) — save STATE with current progress. Compaction can happen any moment.
+
+**Recovery after compaction — DO THIS IMMEDIATELY after reading summary:**
+
+1. Read this file: CLAUDE.md section 4 (you are here)
+2. Read STATE: `$VAULT/03 — Активная Разработка и Детали Текущих Задач/SESSION_STATE.md`
+3. Read latest: `$VAULT/02/[current month]/` — find most recent change log for active modules
+4. Read WIP: `$VAULT/03/` — any incomplete notes
+5. Increment compression_count in STATE
+6. Find line with → in plan
+7. First message = "Continuing — [exact action from → step]"
+8. FORBIDDEN after recovery: asking "where were we", recaps, plan changes, step skips
+
+### SESSION_STATE.md — Format
+
+```markdown
+---
+last_updated: YYYY-MM-DD HH:MM
+task_id: "short-id-001"
+compression_count: 0
+---
+# ACTIVE TASK
+## Task
+[EXACT formulation]
+## Plan
+- [x] Step 1: [action] — DONE [result]
+→ [ ] Step 2: [action] ← CURRENT
+- [ ] Step 3: [action]
+## Changed files
+| File | Change | Status |
+|------|--------|--------|
+## Solutions
+| Solution | Why | Rejected |
+|----------|-----|---------|
+## Context from user
+[Verbatim]
+## Next action
+[Filename + specific action. "Continue work" = INVALID]
+---
+# QUEUE (one-liners, no details)
+| # | Task | Priority | Status |
+|---|------|----------|--------|
+```
+
+### Write/Read Rules
+
+**WRITE to STATE** — BEFORE and AFTER each step, when changing file, when solving, when clarifying from user, forced every 10 messages.
+
+**READ STATE** — first message in dialogue, on "continue/next", when context details lost, before continuing multi-step task.
+
+### Recovery After Compaction
+
+```
+A: Read STATE
+B: Read latest from 02/[current month]/
+C: Read WIP from 03/
+D: compression_count += 1
+E: Find → in plan → execute THAT step
+```
+
+**FORBIDDEN after recovery:** asking "where were we", recaps, changing plan, skipping steps.
+
+**MANDATORY:** continue from → step, first message = "Continuing — [exact action]".
+
+### Rotation
+
+- ACTIVE TASK — always 1 task with details
+- Queue — one-liners, unlimited count
+- Completed task → record in `02/`, remove from STATE
+- Next from queue → expand to ACTIVE TASK
+- Goal: STATE < 80 lines
+
+### STATE Validation
+
+Before saving: "Next action" contains filename + action, exactly one line with →, `last_updated` is current. Invalid STATE — rewrite it.
+
+## 5. WORK PROTOCOL
+
+```
+STEP 0 → Read STATE. Unfinished task? Ask user.
+STEP 1 → Identify modules. Read 02/ + 07/ for them. Large: also 08/ + 01/.
+STEP 2 → Write plan in STATE (steps = specific actions with filenames).
+         Batch: first → ACTIVE, rest → queue.
+STEP 3 → Execute. BEFORE step → move →. AFTER → mark [x].
+STEP 4 → Done → record in 02/. Update 07/ 04/ 05/ 08/ as needed.
+STEP 5 → Rotate STATE: clear, next from queue → ACTIVE → STEP 1.
+```
+
+Templates → `10 — Процесс Разработки/TEMPLATES.md`
+
+## 6. ABSOLUTE RULES
+
+1. STATE updated BEFORE and AFTER each step
+2. First action on startup = read STATE
+3. Code without reading module history (02/ + 07/) = forbidden
+4. Every code change = record in 02/
+5. Problems → 05/ even if not fixing now
+6. After compaction → recovery algorithm (section 4), silently
+7. Plan ONLY in STATE, not in context
+8. "Next action" without filename = invalid
+9. No folder/file → create immediately
+10. Vault beats context on conflict
+11. ACTIVE TASK = 1, rest one-liners in queue
+12. Completed task → 02/ → remove from STATE
+13. Every 5 messages → update STATE (desktop only)
+14. Every long action → save STATE before (desktop only)
+15. Compaction recovery → read section 4 first (desktop only)

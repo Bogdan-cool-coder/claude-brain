@@ -1,36 +1,57 @@
 # Claude Brain
 
-**Persistent memory system for Claude Code CLI that survives 200K token context compaction.**
+**Persistent memory system for Claude Code that survives 200K token context compaction.**
 
-Claude Code loses all context when the conversation hits 200K tokens and gets compacted. Claude Brain solves this by using Obsidian Vault (or any folder) as external memory, with hooks that automatically save state before compaction and restore it after.
+[Русская версия](README.ru.md)
 
 ## The Problem
 
-When working on complex projects, Claude Code regularly hits the 200K token context limit. After compaction, Claude forgets the current task, plan, decisions, and progress — often asking "where did we stop?" or starting over.
+Claude Code loses all context when conversation hits 200K tokens. After compaction, Claude forgets the current task, plan, and decisions — often asking "where did we stop?" or starting over.
 
 ## The Solution
 
-Claude Brain implements 5 levels of protection:
+Claude Brain uses Obsidian Vault (or any folder) as external memory with automatic state management.
+
+### Two versions available:
+
+| | CLI Version | Desktop Version |
+|--|------------|----------------|
+| **Protection** | 5/5 levels (full) | 3/5 levels (partial) |
+| **How it works** | Hooks auto-save/restore context | Enhanced CLAUDE.md + launchd backups |
+| **Platform** | Claude Code CLI in Terminal | Claude Desktop app (Code tab) |
+| **After compaction** | Claude continues instantly from exact step | Claude reads STATE from CLAUDE.md instructions |
+| **Backups** | Hook-triggered + every 5 min | Every 5 min (launchd) |
+
+### CLI: 5 levels of protection
 
 | Level | Mechanism | What it does |
 |-------|-----------|-------------|
-| 1 | **CLAUDE.md** | Auto-loaded rules and continuity protocol |
-| 2 | **compactPrompt** | Guides what Claude preserves during compaction |
-| 3 | **PreCompact hook** | Backs up SESSION_STATE.md before compaction |
-| 4 | **PostCompact hook** | Injects task context after compaction |
-| 5 | **SessionStart hook** | Reminds Claude to read state on every launch |
+| 1 | CLAUDE.md | Auto-loaded rules and continuity protocol |
+| 2 | compactPrompt | Guides what Claude preserves during compaction |
+| 3 | PreCompact hook | Backs up SESSION_STATE.md before compaction |
+| 4 | PostCompact hook | Injects task context after compaction |
+| 5 | SessionStart hook | Reminds Claude to read state on every launch |
 
-After compaction, Claude immediately reads SESSION_STATE.md, finds the current step (marked with →), and continues with "Next — [action]" without asking any questions.
+### Desktop: 3 levels of protection
+
+| Level | Mechanism | What it does |
+|-------|-----------|-------------|
+| 1 | Enhanced CLAUDE.md | Aggressive self-preservation instructions |
+| 2 | compactPrompt | Guides what Claude preserves during compaction |
+| 3 | launchd backup | Auto-backup SESSION_STATE every 5 minutes |
+
+> **Note:** Desktop hooks don't work due to a [known bug](https://github.com/anthropics/claude-code/issues/42336). Desktop version compensates with stronger CLAUDE.md instructions and automatic backups.
 
 ## Quick Start
 
 ### Prerequisites
 
-- **Claude Code CLI** v2.0+ (`npm install -g @anthropic-ai/claude-code`)
 - **macOS** or **Linux**
-- A folder for project vaults (Obsidian Vault recommended but not required)
+- **Claude Code CLI** (`npm install -g @anthropic-ai/claude-code`) — for CLI version
+- **Claude Desktop app** — for Desktop version
+- A folder for project vaults (Obsidian recommended but not required)
 
-### Install (one time)
+### Install
 
 ```bash
 git clone https://github.com/bogdan-cool-coder/claude-brain.git
@@ -38,7 +59,15 @@ cd claude-brain
 bash install.sh
 ```
 
-The installer will ask for your vault folder path and set up everything globally.
+The installer shows a menu:
+
+```
+Choose what to install:
+
+  1) CLI version        — Full protection (5/5 levels)
+  2) Desktop version    — Partial protection (3/5 levels)
+  3) Both               — CLI + Desktop (recommended)
+```
 
 Then optionally make `claude-brain` available as a command:
 
@@ -53,20 +82,16 @@ cd ~/your/project
 claude-brain init MyProject
 ```
 
-This creates:
-- Vault folder with structured directories (00-10)
-- `CLAUDE.md` in your project root with the continuity protocol
-- `SESSION_STATE.md` for tracking active tasks
-- `.claude/brain.conf` mapping your project to its vault
+This creates: vault folder with structured directories (00-10), `CLAUDE.md` in your project root, `SESSION_STATE.md`, and `.claude/brain.conf`.
 
 ### Start Working
 
 ```bash
 cd ~/your/project
-claude
+claude              # CLI version
 ```
 
-That's it. The hooks will automatically activate when Claude Code starts in a brain-enabled project.
+For Desktop: open the project in Claude Desktop's Code tab. CLAUDE.md will be loaded automatically.
 
 ## How It Works
 
@@ -76,41 +101,51 @@ Each project gets a vault folder with 11 directories:
 
 ```
 Obsidian Vault/MyProject/
-├── 00 — General Info/          # README, stack, versions
-├── 01 — Architecture/          # Architecture, API, DB
-├── 02 — Change History/        # History of ALL changes (by month)
-├── 03 — Active Development/    # SESSION_STATE.md, WIP
-├── 04 — Bug Reports/           # Bug postmortems
-├── 05 — Tech Debt/             # Tech debt, risks
-├── 06 — Ideas/                 # Feature requests
-├── 07 — Module Docs/           # Module documentation
-├── 08 — Snippets/              # Code snippets, patterns
-├── 09 — Infrastructure/        # Servers, CI/CD
-└── 10 — Process/               # Git-flow, standards
+├── 00 — General Info/
+├── 01 — Architecture/
+├── 02 — Change History/        (by month)
+├── 03 — Active Development/    (SESSION_STATE.md lives here)
+├── 04 — Bug Reports/
+├── 05 — Tech Debt/
+├── 06 — Ideas/
+├── 07 — Module Docs/
+├── 08 — Snippets/
+├── 09 — Infrastructure/
+└── 10 — Process/
 ```
 
 ### SESSION_STATE.md
 
-The heart of the system — a structured file that tracks:
-- Current task and plan (with → marking the active step)
-- Changed files and decisions
-- Compression count
-- Next action (must include a specific filename)
+The heart of the system — tracks current task, plan (with → marking active step), changed files, decisions, and next action.
 
-### Hook Flow
+### Hook Flow (CLI)
 
 ```
 SessionStart → Remind Claude to read STATE
      ↓
 [Claude works, context grows to 200K]
      ↓
-PreCompact  → Backup STATE, timestamp
+PreCompact  → Backup STATE
      ↓
 [Context compacted]
      ↓
 PostCompact → Inject: task ID, current step, next action
      ↓
 Claude reads STATE → Continues from → step
+```
+
+### Desktop Flow
+
+```
+CLAUDE.md loaded → Claude reads STATE on start
+     ↓
+[Claude works, saves STATE every 5 messages]
+     ↓
+[Context compacted — compactPrompt preserves key info]
+     ↓
+Claude reads CLAUDE.md → Reads STATE → Continues from → step
+     ↓
+launchd → Backups every 5 min (safety net)
 ```
 
 ## Commands
@@ -121,29 +156,34 @@ claude-brain status        # Show current project state
 claude-brain list          # List all brain-enabled projects
 ```
 
-## File Structure
+## Repository Structure
 
 ```
-~/.claude/
-├── settings.json          # Global hooks config
-├── brain-config           # Vault root path
-├── hooks/
-│   ├── _detect-project.sh # Auto-detects project and vault
-│   ├── session-start.sh   # SessionStart hook
-│   ├── pre-compact.sh     # PreCompact hook
-│   ├── post-compact.sh    # PostCompact hook
-│   └── claude-brain       # CLI management tool
-└── templates/
-    ├── CLAUDE.md.template
-    └── SESSION_STATE.md.template
+claude-brain/
+├── install.sh              # Main installer (choose CLI/Desktop/Both)
+├── cli/
+│   ├── install.sh          # CLI-specific installer
+│   ├── hooks/              # Hook scripts (SessionStart, PreCompact, PostCompact)
+│   └── settings.json       # Settings with hooks + compactPrompt
+├── desktop/
+│   ├── install.sh          # Desktop-specific installer
+│   ├── backup-state.sh     # launchd backup script
+│   └── settings.desktop.json  # Settings with compactPrompt only
+└── shared/
+    ├── claude-brain         # CLI management tool
+    └── templates/
+        ├── CLAUDE.cli.md.template
+        ├── CLAUDE.desktop.md.template
+        └── SESSION_STATE.md.template
 ```
 
 ## Important Notes
 
-- **Claude Code CLI only.** Hooks don't work in the desktop app's Code tab (known bug: [#42336](https://github.com/anthropics/claude-code/issues/42336)).
-- **Obsidian is optional.** Any folder works as a vault. Obsidian just makes it easy to browse and edit vault files.
-- **Per-project override.** Add `.claude/brain.conf` with `vault_name=CustomName` if your vault name differs from the directory name.
-- **Backups.** PreCompact keeps the last 20 SESSION_STATE backups automatically.
+- **CLI version** requires Claude Code CLI v2.0+. Hooks don't work in Desktop app ([bug #42336](https://github.com/anthropics/claude-code/issues/42336)).
+- **Desktop version** works in Claude Desktop's Code tab with partial protection.
+- **Both versions** can be installed together — they don't conflict.
+- **Obsidian is optional.** Any folder works as a vault.
+- **Per-project override.** Add `.claude/brain.conf` with `vault_name=CustomName` if vault name differs from directory name.
 
 ## License
 

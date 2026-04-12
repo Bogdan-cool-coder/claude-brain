@@ -1,92 +1,126 @@
 #!/bin/bash
-# =============================================================
-# Claude Brain System — One-time installer
-# Run: bash install.sh
-# =============================================================
 
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-CLAUDE_DIR="$HOME/.claude"
-HOOKS_DIR="$CLAUDE_DIR/hooks"
-TEMPLATES_DIR="$CLAUDE_DIR/templates"
-BRAIN_CONFIG="$CLAUDE_DIR/brain-config"
+# === Claude Brain System — Main Installer ===
+# Delegates to CLI and/or Desktop installers based on user choice
 
-echo "=== Claude Brain System — Install ==="
-echo ""
-echo "This will set up persistent memory for Claude Code."
-echo "Claude will survive 200K token context compaction without losing track."
-echo ""
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CLI_INSTALL="$SCRIPT_DIR/cli/install.sh"
+DESKTOP_INSTALL="$SCRIPT_DIR/desktop/install.sh"
 
-# Ask for Obsidian Vault path
-DEFAULT_VAULT_ROOT="$HOME/Documents/Obsidian Vault"
-echo "Where is your Obsidian Vault (or folder for project vaults)?"
-read -p "Path [$DEFAULT_VAULT_ROOT]: " VAULT_ROOT
-VAULT_ROOT="${VAULT_ROOT:-$DEFAULT_VAULT_ROOT}"
+# Color codes for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
 
-# Expand ~ if used
-VAULT_ROOT="${VAULT_ROOT/#\~/$HOME}"
+echo -e "${BLUE}=== Claude Brain System — Install ===${NC}\n"
 
-if [ ! -d "$VAULT_ROOT" ]; then
-  read -p "Directory doesn't exist. Create it? (y/n) " -n 1 -r
-  echo ""
-  if [[ $REPLY =~ ^[Yy]$ ]]; then
-    mkdir -p "$VAULT_ROOT"
-  else
-    echo "Cancelled. Create the directory first and re-run."
+# Validate that required installers exist
+if [[ ! -f "$CLI_INSTALL" ]]; then
+    echo -e "${RED}✗ Error: cli/install.sh not found at $CLI_INSTALL${NC}"
     exit 1
-  fi
 fi
 
-# 1. Create directories
-echo ""
-echo "[1/5] Creating directories..."
-mkdir -p "$HOOKS_DIR"
-mkdir -p "$TEMPLATES_DIR"
-
-# 2. Copy hook scripts
-echo "[2/5] Installing hook scripts..."
-cp "$SCRIPT_DIR/hooks/_detect-project.sh" "$HOOKS_DIR/"
-cp "$SCRIPT_DIR/hooks/session-start.sh" "$HOOKS_DIR/"
-cp "$SCRIPT_DIR/hooks/pre-compact.sh" "$HOOKS_DIR/"
-cp "$SCRIPT_DIR/hooks/post-compact.sh" "$HOOKS_DIR/"
-cp "$SCRIPT_DIR/hooks/claude-brain" "$HOOKS_DIR/"
-chmod +x "$HOOKS_DIR"/*.sh "$HOOKS_DIR/claude-brain"
-
-# 3. Copy templates
-echo "[3/5] Installing templates..."
-cp "$SCRIPT_DIR/templates/CLAUDE.md.template" "$TEMPLATES_DIR/"
-cp "$SCRIPT_DIR/templates/SESSION_STATE.md.template" "$TEMPLATES_DIR/"
-
-# 4. Save global config
-echo "[4/5] Saving configuration..."
-echo "vault_root=$VAULT_ROOT" > "$BRAIN_CONFIG"
-
-# 5. Update settings.json
-echo "[5/5] Updating ~/.claude/settings.json..."
-SETTINGS="$CLAUDE_DIR/settings.json"
-
-if [ -f "$SETTINGS" ]; then
-  cp "$SETTINGS" "$SETTINGS.backup.$(date +%Y%m%d_%H%M%S)"
-  echo "  Backup saved: $SETTINGS.backup.*"
+if [[ ! -f "$DESKTOP_INSTALL" ]]; then
+    echo -e "${RED}✗ Error: desktop/install.sh not found at $DESKTOP_INSTALL${NC}"
+    exit 1
 fi
 
-cp "$SCRIPT_DIR/settings.global.json" "$SETTINGS"
+# Display menu
+echo "Choose what to install:"
+echo ""
+echo "  1) CLI version        — Full protection (5/5 levels)"
+echo "                          Hooks: SessionStart, PreCompact, PostCompact"
+echo "                          Requires: Claude Code CLI"
+echo ""
+echo "  2) Desktop version    — Partial protection (3/5 levels)"
+echo "                          Auto-backup via launchd, enhanced CLAUDE.md"
+echo "                          For: Claude Desktop app Code tab"
+echo ""
+echo "  3) Both               — CLI + Desktop (recommended)"
+echo "                          Full CLI protection + Desktop backup safety net"
+echo ""
+read -p "Enter choice [1/2/3]: " choice
+
+case "$choice" in
+    1)
+        echo -e "\n${BLUE}Installing CLI version...${NC}\n"
+        bash "$CLI_INSTALL"
+        INSTALL_CLI_SUCCESS=1
+        ;;
+    2)
+        echo -e "\n${BLUE}Installing Desktop version...${NC}\n"
+        bash "$DESKTOP_INSTALL"
+        INSTALL_DESKTOP_SUCCESS=1
+        ;;
+    3)
+        echo -e "\n${BLUE}Installing CLI version...${NC}\n"
+        bash "$CLI_INSTALL"
+        INSTALL_CLI_SUCCESS=1
+
+        echo ""
+        echo -e "\n${BLUE}Installing Desktop version...${NC}\n"
+        bash "$DESKTOP_INSTALL"
+        INSTALL_DESKTOP_SUCCESS=1
+        ;;
+    *)
+        echo -e "${RED}Invalid choice. Please enter 1, 2, or 3.${NC}"
+        exit 1
+        ;;
+esac
+
+# Offer to create symlink for claude-brain command if CLI was installed
+if [[ $INSTALL_CLI_SUCCESS -eq 1 ]]; then
+    echo ""
+    echo -e "${BLUE}=== CLI Command Setup ===${NC}"
+    echo ""
+    read -p "Create symlink for 'claude-brain' command? (y/n) [y]: " create_symlink
+    create_symlink=${create_symlink:-y}
+
+    if [[ "$create_symlink" == "y" || "$create_symlink" == "Y" ]]; then
+        BRAIN_CLI="$HOME/.claude/hooks/claude-brain"
+
+        if [[ ! -f "$BRAIN_CLI" ]]; then
+            echo -e "${RED}✗ Error: claude-brain not found at $BRAIN_CLI${NC}"
+        else
+            SYMLINK_PATH="/usr/local/bin/claude-brain"
+
+            if [[ -e "$SYMLINK_PATH" ]]; then
+                read -p "Symlink already exists. Overwrite? (y/n) [y]: " overwrite
+                overwrite=${overwrite:-y}
+                if [[ "$overwrite" != "y" && "$overwrite" != "Y" ]]; then
+                    echo -e "${YELLOW}Skipped symlink creation${NC}"
+                    echo ""
+                    exit 0
+                fi
+                sudo rm "$SYMLINK_PATH"
+            fi
+
+            sudo ln -s "$BRAIN_CLI" "$SYMLINK_PATH"
+            echo -e "${GREEN}✓ Symlink created: $SYMLINK_PATH → $BRAIN_CLI${NC}"
+            echo ""
+            echo "You can now use: ${BLUE}claude-brain${NC} from any directory"
+        fi
+    fi
+fi
 
 echo ""
-echo "=== Installation Complete ==="
+echo -e "${GREEN}=== Installation Complete ===${NC}"
 echo ""
-echo "Global hooks:  $HOOKS_DIR/"
-echo "Templates:     $TEMPLATES_DIR/"
-echo "Settings:      $SETTINGS"
-echo "Vault root:    $VAULT_ROOT"
+echo "Next steps:"
 echo ""
-echo "Hooks now work for ALL projects automatically."
-echo ""
-echo "Optional: make 'claude-brain' available as a command:"
-echo "  sudo ln -sf $HOOKS_DIR/claude-brain /usr/local/bin/claude-brain"
-echo ""
-echo "To initialize a new project:"
-echo "  cd /your/project"
-echo "  claude-brain init [vault-name]"
+
+if [[ $INSTALL_CLI_SUCCESS -eq 1 ]]; then
+    echo "  • CLI: Configure ~/.claude/brain-config with your Obsidian Vault path"
+    echo "  • CLI: Test with: ${BLUE}claude-brain status${NC}"
+fi
+
+if [[ $INSTALL_DESKTOP_SUCCESS -eq 1 ]]; then
+    echo "  • Desktop: Check ~/Library/LaunchAgents/com.claude.brain.backup.plist"
+    echo "  • Desktop: Backups saved to ~/.claude/backups/"
+fi
+
 echo ""

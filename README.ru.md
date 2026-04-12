@@ -1,36 +1,57 @@
 # Claude Brain
 
-**Система постоянной памяти для Claude Code CLI, которая переживает сжатие контекста на 200K токенов.**
+**Система постоянной памяти для Claude Code, которая переживает сжатие контекста на 200K токенов.**
 
-Claude Code теряет весь контекст когда разговор достигает лимита в 200K токенов и сжимается. Claude Brain решает эту проблему используя Obsidian Vault (или любую папку) как внешнюю память, с хуками которые автоматически сохраняют состояние перед сжатием и восстанавливают после.
+[English version](README.md)
 
 ## Проблема
 
-При работе над сложными проектами Claude Code регулярно достигает лимита в 200K токенов. После сжатия Claude забывает текущую задачу, план, решения и прогресс — часто спрашивая «на чём остановились?» или начиная заново.
+Claude Code теряет весь контекст при достижении лимита в 200K токенов. После сжатия Claude забывает текущую задачу, план и решения — часто спрашивая «на чём остановились?» или начиная заново.
 
 ## Решение
 
-Claude Brain реализует 5 уровней защиты:
+Claude Brain использует Obsidian Vault (или любую папку) как внешнюю память с автоматическим управлением состоянием.
+
+### Две версии:
+
+| | CLI версия | Desktop версия |
+|--|-----------|---------------|
+| **Защита** | 5/5 уровней (полная) | 3/5 уровней (частичная) |
+| **Как работает** | Хуки авто-сохраняют/восстанавливают контекст | Усиленный CLAUDE.md + launchd бэкапы |
+| **Платформа** | Claude Code CLI в Терминале | Claude Desktop приложение (Code tab) |
+| **После сжатия** | Claude мгновенно продолжает с точного шага | Claude читает STATE по инструкциям из CLAUDE.md |
+| **Бэкапы** | По событию хука + каждые 5 мин | Каждые 5 мин (launchd) |
+
+### CLI: 5 уровней защиты
 
 | Уровень | Механизм | Что делает |
 |---------|----------|-----------|
-| 1 | **CLAUDE.md** | Автозагружаемые правила и протокол непрерывности |
-| 2 | **compactPrompt** | Направляет что Claude сохраняет при сжатии |
-| 3 | **PreCompact хук** | Бэкап SESSION_STATE.md перед сжатием |
-| 4 | **PostCompact хук** | Инжекция контекста задачи после сжатия |
-| 5 | **SessionStart хук** | Напоминание прочитать состояние при каждом запуске |
+| 1 | CLAUDE.md | Автозагружаемые правила и протокол непрерывности |
+| 2 | compactPrompt | Направляет что Claude сохраняет при сжатии |
+| 3 | PreCompact хук | Бэкап SESSION_STATE.md перед сжатием |
+| 4 | PostCompact хук | Инжекция контекста задачи после сжатия |
+| 5 | SessionStart хук | Напоминание при каждом запуске |
 
-После сжатия Claude сразу читает SESSION_STATE.md, находит текущий шаг (отмеченный →) и продолжает с «Далее — [действие]» без единого вопроса.
+### Desktop: 3 уровня защиты
+
+| Уровень | Механизм | Что делает |
+|---------|----------|-----------|
+| 1 | Усиленный CLAUDE.md | Агрессивные инструкции самосохранения |
+| 2 | compactPrompt | Направляет что Claude сохраняет при сжатии |
+| 3 | launchd бэкап | Автобэкап SESSION_STATE каждые 5 минут |
+
+> **Примечание:** Хуки не работают в Desktop из-за [известного бага](https://github.com/anthropics/claude-code/issues/42336). Desktop версия компенсирует это более сильными инструкциями в CLAUDE.md и автоматическими бэкапами.
 
 ## Быстрый старт
 
 ### Требования
 
-- **Claude Code CLI** v2.0+ (`npm install -g @anthropic-ai/claude-code`)
 - **macOS** или **Linux**
-- Папка для vault'ов проектов (рекомендуется Obsidian Vault, но необязательно)
+- **Claude Code CLI** (`npm install -g @anthropic-ai/claude-code`) — для CLI версии
+- **Claude Desktop приложение** — для Desktop версии
+- Папка для vault'ов (рекомендуется Obsidian, но необязательно)
 
-### Установка (один раз)
+### Установка
 
 ```bash
 git clone https://github.com/bogdan-cool-coder/claude-brain.git
@@ -38,7 +59,15 @@ cd claude-brain
 bash install.sh
 ```
 
-Установщик спросит путь к папке vault и настроит всё глобально.
+Установщик покажет меню:
+
+```
+Choose what to install:
+
+  1) CLI version        — Full protection (5/5 levels)
+  2) Desktop version    — Partial protection (3/5 levels)
+  3) Both               — CLI + Desktop (recommended)
+```
 
 Опционально — сделать `claude-brain` доступной как команду:
 
@@ -53,20 +82,16 @@ cd ~/your/project
 claude-brain init MyProject
 ```
 
-Это создаст:
-- Папку vault со структурой директорий (00-10)
-- `CLAUDE.md` в корне проекта с протоколом непрерывности
-- `SESSION_STATE.md` для отслеживания текущей задачи
-- `.claude/brain.conf` — связь проекта с его vault
+Создаст: папку vault со структурой (00-10), `CLAUDE.md` в корне проекта, `SESSION_STATE.md`, и `.claude/brain.conf`.
 
 ### Начало работы
 
 ```bash
 cd ~/your/project
-claude
+claude              # CLI версия
 ```
 
-Всё. Хуки автоматически активируются когда Claude Code запускается в проекте с brain.
+Для Desktop: открой проект во вкладке Code в Claude Desktop. CLAUDE.md загрузится автоматически.
 
 ## Как это работает
 
@@ -76,35 +101,31 @@ claude
 
 ```
 Obsidian Vault/MyProject/
-├── 00 — General Info/          # README, стек, версии
-├── 01 — Architecture/          # Архитектура, API, БД
-├── 02 — Change History/        # История ВСЕХ изменений (по месяцам)
-├── 03 — Active Development/    # SESSION_STATE.md, WIP
-├── 04 — Bug Reports/           # Разборы багов
-├── 05 — Tech Debt/             # Техдолг, риски
-├── 06 — Ideas/                 # Feature requests
-├── 07 — Module Docs/           # Документация модулей
-├── 08 — Snippets/              # Сниппеты, паттерны
-├── 09 — Infrastructure/        # Серверы, CI/CD
-└── 10 — Process/               # Git-flow, стандарты
+├── 00 — General Info/
+├── 01 — Architecture/
+├── 02 — Change History/        (по месяцам)
+├── 03 — Active Development/    (SESSION_STATE.md здесь)
+├── 04 — Bug Reports/
+├── 05 — Tech Debt/
+├── 06 — Ideas/
+├── 07 — Module Docs/
+├── 08 — Snippets/
+├── 09 — Infrastructure/
+└── 10 — Process/
 ```
 
 ### SESSION_STATE.md
 
-Сердце системы — структурированный файл который отслеживает:
-- Текущую задачу и план (→ отмечает активный шаг)
-- Изменённые файлы и решения
-- Счётчик сжатий
-- Следующее действие (обязательно с именем файла)
+Сердце системы — отслеживает текущую задачу, план (→ отмечает активный шаг), изменённые файлы, решения и следующее действие.
 
-### Поток хуков
+### Поток хуков (CLI)
 
 ```
 SessionStart → Напомнить Claude прочитать STATE
      ↓
 [Claude работает, контекст растёт до 200K]
      ↓
-PreCompact  → Бэкап STATE, метка времени
+PreCompact  → Бэкап STATE
      ↓
 [Контекст сжат]
      ↓
@@ -113,37 +134,56 @@ PostCompact → Инжекция: task ID, текущий шаг, следующ
 Claude читает STATE → Продолжает с шага →
 ```
 
+### Поток Desktop
+
+```
+CLAUDE.md загружен → Claude читает STATE при старте
+     ↓
+[Claude работает, сохраняет STATE каждые 5 сообщений]
+     ↓
+[Контекст сжат — compactPrompt сохраняет ключевую информацию]
+     ↓
+Claude читает CLAUDE.md → Читает STATE → Продолжает с шага →
+     ↓
+launchd → Бэкапы каждые 5 мин (страховка)
+```
+
 ## Команды
 
 ```bash
 claude-brain init [имя]    # Инициализировать vault проекта
 claude-brain status        # Статус текущего проекта
-claude-brain list          # Список всех проектов с vault
+claude-brain list          # Список всех проектов
 ```
 
-## Структура файлов
+## Структура репозитория
 
 ```
-~/.claude/
-├── settings.json          # Глобальные настройки хуков
-├── brain-config           # Путь к корню vault
-├── hooks/
-│   ├── _detect-project.sh # Автодетект проекта и vault
-│   ├── session-start.sh   # SessionStart хук
-│   ├── pre-compact.sh     # PreCompact хук
-│   ├── post-compact.sh    # PostCompact хук
-│   └── claude-brain       # CLI утилита управления
-└── templates/
-    ├── CLAUDE.md.template
-    └── SESSION_STATE.md.template
+claude-brain/
+├── install.sh              # Главный установщик (выбор CLI/Desktop/Оба)
+├── cli/
+│   ├── install.sh          # Установщик CLI версии
+│   ├── hooks/              # Хук-скрипты (SessionStart, PreCompact, PostCompact)
+│   └── settings.json       # Настройки с хуками + compactPrompt
+├── desktop/
+│   ├── install.sh          # Установщик Desktop версии
+│   ├── backup-state.sh     # Скрипт бэкапа для launchd
+│   └── settings.desktop.json  # Настройки только с compactPrompt
+└── shared/
+    ├── claude-brain         # CLI утилита управления
+    └── templates/
+        ├── CLAUDE.cli.md.template
+        ├── CLAUDE.desktop.md.template
+        └── SESSION_STATE.md.template
 ```
 
 ## Важно
 
-- **Только Claude Code CLI.** Хуки не работают во вкладке Code десктопного приложения (известный баг: [#42336](https://github.com/anthropics/claude-code/issues/42336)).
-- **Obsidian не обязателен.** Любая папка подходит как vault. Obsidian просто удобен для просмотра и редактирования файлов.
+- **CLI версия** требует Claude Code CLI v2.0+. Хуки не работают в Desktop ([баг #42336](https://github.com/anthropics/claude-code/issues/42336)).
+- **Desktop версия** работает во вкладке Code Claude Desktop с частичной защитой.
+- **Обе версии** можно установить вместе — они не конфликтуют.
+- **Obsidian не обязателен.** Любая папка подходит как vault.
 - **Переопределение для проекта.** Добавь `.claude/brain.conf` с `vault_name=CustomName` если имя vault отличается от имени директории.
-- **Бэкапы.** PreCompact хранит последние 20 бэкапов SESSION_STATE автоматически.
 
 ## Лицензия
 
