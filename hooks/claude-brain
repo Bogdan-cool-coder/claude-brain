@@ -1,0 +1,275 @@
+#!/bin/bash
+# =============================================================
+# claude-brain — Project brain system management
+#
+# Usage:
+#   claude-brain init [vault_name]   — Create vault and CLAUDE.md for project
+#   claude-brain status              — Show current project state
+#   claude-brain list                — Show all projects with vaults
+# =============================================================
+
+set -e
+
+# Read global config
+BRAIN_CONFIG="$HOME/.claude/brain-config"
+if [ -f "$BRAIN_CONFIG" ]; then
+  OBSIDIAN_VAULT_ROOT=$(grep "^vault_root=" "$BRAIN_CONFIG" | head -1 | cut -d'=' -f2-)
+fi
+OBSIDIAN_VAULT_ROOT="${OBSIDIAN_VAULT_ROOT:-$HOME/Documents/Obsidian Vault}"
+
+TEMPLATES_DIR="$HOME/.claude/templates"
+
+# Detect project root
+PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+PROJECT_DIR_NAME=$(basename "$PROJECT_ROOT")
+
+# ---- COMMANDS ----
+
+cmd_init() {
+  local VAULT_NAME="${1:-$PROJECT_DIR_NAME}"
+  local VAULT="$OBSIDIAN_VAULT_ROOT/$VAULT_NAME"
+
+  echo "=== Claude Brain — Project Init ==="
+  echo ""
+  echo "Project:  $PROJECT_DIR_NAME"
+  echo "Vault:    $VAULT_NAME"
+  echo "Path:     $VAULT"
+  echo ""
+
+  if [ -d "$VAULT" ]; then
+    echo "NOTE: Vault '$VAULT_NAME' already exists."
+    read -p "Continue? Existing files will NOT be overwritten. (y/n) " -n 1 -r
+    echo ""
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+      echo "Cancelled."
+      exit 0
+    fi
+  fi
+
+  # Create vault folder structure
+  echo "[1/5] Creating vault structure..."
+  local FOLDERS=(
+    "00 — General Info"
+    "01 — Architecture and Technical Decisions"
+    "02 — Change History/$(date +%Y-%m)"
+    "03 — Active Development and Current Tasks"
+    "03 — Active Development and Current Tasks/_state_backups"
+    "04 — Bug Reports and Incidents"
+    "05 — Tech Debt and Risks"
+    "06 — Ideas and Feature Requests"
+    "07 — Module Documentation"
+    "08 — Snippets and Patterns"
+    "09 — Infrastructure"
+    "10 — Development Process"
+  )
+
+  for folder in "${FOLDERS[@]}"; do
+    mkdir -p "$VAULT/$folder"
+  done
+
+  # Create SESSION_STATE.md
+  echo "[2/5] Creating SESSION_STATE.md..."
+  local STATE="$VAULT/03 — Active Development and Current Tasks/SESSION_STATE.md"
+  if [ ! -f "$STATE" ]; then
+    if [ -f "$TEMPLATES_DIR/SESSION_STATE.md.template" ]; then
+      sed "s/{{DATE}}/$(date +"%Y-%m-%d %H:%M")/" "$TEMPLATES_DIR/SESSION_STATE.md.template" > "$STATE"
+    else
+      cat > "$STATE" << 'STATEEOF'
+---
+last_updated: TEMPLATE_DATE
+task_id: ""
+compression_count: 0
+---
+# ACTIVE TASK
+## Task
+_(no active task)_
+## Plan
+## Changed Files
+| File | Change | Status |
+|------|--------|--------|
+## Decisions
+| Decision | Why | Rejected |
+|----------|-----|----------|
+## User Context
+## Next Action
+Waiting for task from user.
+---
+# QUEUE (one-liners, no details)
+| # | Task | Priority | Status |
+|---|------|----------|--------|
+STATEEOF
+      if [[ "$OSTYPE" == "darwin"* ]]; then
+        sed -i '' "s/TEMPLATE_DATE/$(date +"%Y-%m-%d %H:%M")/" "$STATE"
+      else
+        sed -i "s/TEMPLATE_DATE/$(date +"%Y-%m-%d %H:%M")/" "$STATE"
+      fi
+    fi
+  else
+    echo "  SESSION_STATE.md already exists — skipped."
+  fi
+
+  # Create CLAUDE.md
+  echo "[3/5] Creating CLAUDE.md..."
+  local CLAUDE_MD="$PROJECT_ROOT/CLAUDE.md"
+  if [ ! -f "$CLAUDE_MD" ]; then
+    if [ -f "$TEMPLATES_DIR/CLAUDE.md.template" ]; then
+      sed -e "s|{{PROJECT_NAME}}|$VAULT_NAME|g" \
+          -e "s|{{VAULT_NAME}}|$VAULT_NAME|g" \
+          -e "s|{{PROJECT_ROOT}}|$PROJECT_ROOT|g" \
+          "$TEMPLATES_DIR/CLAUDE.md.template" > "$CLAUDE_MD"
+    else
+      echo "  WARNING: Template not found at $TEMPLATES_DIR/CLAUDE.md.template"
+      echo "  Run install.sh first."
+    fi
+  else
+    echo "  CLAUDE.md already exists — skipped."
+  fi
+
+  # Create brain.conf
+  echo "[4/5] Configuring project..."
+  mkdir -p "$PROJECT_ROOT/.claude"
+  echo "vault_name=$VAULT_NAME" > "$PROJECT_ROOT/.claude/brain.conf"
+
+  # Create README in vault
+  echo "[5/5] Creating vault README..."
+  local README="$VAULT/00 — General Info/README.md"
+  if [ ! -f "$README" ]; then
+    cat > "$README" << EOF
+# $VAULT_NAME
+
+Project: $PROJECT_DIR_NAME
+Repository: $PROJECT_ROOT
+Created: $(date +"%Y-%m-%d %H:%M")
+
+## Stack
+_(fill in)_
+
+## Versions
+_(fill in)_
+EOF
+  fi
+
+  echo ""
+  echo "=== Done! ==="
+  echo ""
+  echo "Vault:     $VAULT"
+  echo "CLAUDE.md: $CLAUDE_MD"
+  echo ""
+  echo "Next steps:"
+  echo "1. Edit CLAUDE.md — add project-specific rules in section 3"
+  echo "2. Fill in 00/README.md — stack and versions"
+  echo "3. Run 'claude' in CLI — hooks will pick up the project automatically"
+  echo ""
+}
+
+cmd_status() {
+  local BRAIN_CONF="$PROJECT_ROOT/.claude/brain.conf"
+  local VAULT_NAME="$PROJECT_DIR_NAME"
+  if [ -f "$BRAIN_CONF" ]; then
+    VAULT_NAME=$(grep "^vault_name=" "$BRAIN_CONF" | head -1 | cut -d'=' -f2-)
+  fi
+  VAULT_NAME="${VAULT_NAME:-$PROJECT_DIR_NAME}"
+  local VAULT="$OBSIDIAN_VAULT_ROOT/$VAULT_NAME"
+  local STATE="$VAULT/03 — Active Development and Current Tasks/SESSION_STATE.md"
+  # Fallback to Russian folder names
+  if [ ! -f "$STATE" ]; then
+    STATE="$VAULT/03 — Активная Разработка и Детали Текущих Задач/SESSION_STATE.md"
+  fi
+
+  echo "=== Claude Brain — Status ==="
+  echo ""
+  echo "Project:    $PROJECT_DIR_NAME"
+  echo "Vault:      $VAULT_NAME"
+  echo "Vault path: $VAULT"
+  echo ""
+
+  if [ ! -d "$VAULT" ]; then
+    echo "Status: NOT INITIALIZED"
+    echo "Run: claude-brain init"
+    return
+  fi
+
+  echo "Status: Active"
+
+  if [ -f "$STATE" ]; then
+    echo ""
+    echo "--- SESSION_STATE ---"
+    local TASK_ID=$(grep "^task_id:" "$STATE" 2>/dev/null | head -1 | sed 's/^task_id: *//' | tr -d '"')
+    local LAST_UPDATED=$(grep "^last_updated:" "$STATE" 2>/dev/null | head -1 | sed 's/^last_updated: *//')
+    local COMPRESSION=$(grep "^compression_count:" "$STATE" 2>/dev/null | head -1 | sed 's/^compression_count: *//')
+    local CURRENT_STEP=$(grep "^→" "$STATE" 2>/dev/null | head -1)
+
+    echo "Task:        ${TASK_ID:-none}"
+    echo "Updated:     ${LAST_UPDATED:-n/a}"
+    echo "Compactions: ${COMPRESSION:-0}"
+    [ -n "$CURRENT_STEP" ] && echo "Current:     $CURRENT_STEP"
+  else
+    echo "SESSION_STATE.md: not found"
+  fi
+  echo ""
+}
+
+cmd_list() {
+  echo "=== Claude Brain — All Projects ==="
+  echo ""
+
+  if [ ! -d "$OBSIDIAN_VAULT_ROOT" ]; then
+    echo "Obsidian Vault not found: $OBSIDIAN_VAULT_ROOT"
+    echo "Run install.sh first or check brain-config."
+    exit 1
+  fi
+
+  local found=0
+  for vault_dir in "$OBSIDIAN_VAULT_ROOT"/*/; do
+    # Check both English and Russian folder names
+    local state_file=""
+    if [ -f "$vault_dir/03 — Active Development and Current Tasks/SESSION_STATE.md" ]; then
+      state_file="$vault_dir/03 — Active Development and Current Tasks/SESSION_STATE.md"
+    elif [ -f "$vault_dir/03 — Активная Разработка и Детали Текущих Задач/SESSION_STATE.md" ]; then
+      state_file="$vault_dir/03 — Активная Разработка и Детали Текущих Задач/SESSION_STATE.md"
+    fi
+
+    if [ -n "$state_file" ]; then
+      found=$((found + 1))
+      local name=$(basename "$vault_dir")
+      local task_id=$(grep "^task_id:" "$state_file" 2>/dev/null | head -1 | sed 's/^task_id: *//' | tr -d '"')
+      local last_updated=$(grep "^last_updated:" "$state_file" 2>/dev/null | head -1 | sed 's/^last_updated: *//')
+      printf "  %-25s task: %-20s updated: %s\n" "$name" "${task_id:-none}" "${last_updated:-n/a}"
+    fi
+  done
+
+  if [ $found -eq 0 ]; then
+    echo "  No projects found."
+    echo "  Run: cd /your/project && claude-brain init"
+  fi
+  echo ""
+  echo "Total: $found"
+  echo ""
+}
+
+# ---- ROUTER ----
+
+case "${1:-}" in
+  init)
+    cmd_init "$2"
+    ;;
+  status)
+    cmd_status
+    ;;
+  list)
+    cmd_list
+    ;;
+  *)
+    echo "Claude Brain — Persistent memory system for Claude Code"
+    echo ""
+    echo "Usage:"
+    echo "  claude-brain init [vault_name]  — Initialize project (vault + CLAUDE.md)"
+    echo "  claude-brain status             — Current project status"
+    echo "  claude-brain list               — List all brain-enabled projects"
+    echo ""
+    echo "Examples:"
+    echo "  cd ~/projects/my-app && claude-brain init"
+    echo "  cd ~/projects/my-app && claude-brain init MyApp"
+    echo "  claude-brain list"
+    ;;
+esac

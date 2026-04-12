@@ -1,0 +1,22 @@
+---
+last_updated: {{DATE}}
+task_id: ""
+compression_count: 0
+---
+# ACTIVE TASK
+## Task
+_(no active task)_
+## Plan
+## Changed Files
+| File | Change | Status |
+|------|--------|--------|
+## Decisions
+| Decision | Why | Rejected |
+|----------|-----|----------|
+## User Context
+## Next Action
+Waiting for task from user.
+---
+# QUEUE (one-liners, no details)
+| # | Task | Priority | Status |
+|---|------|----------|--------|

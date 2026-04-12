@@ -1,0 +1,35 @@
+{
+  "compactPrompt": "When compacting context, ALWAYS preserve in summary:\n1. Path to SESSION_STATE.md (from project CLAUDE.md)\n2. Current plan step (line with → from SESSION_STATE)\n3. All changed file names in this session\n4. All decisions with reasoning\n5. Verbatim user requirements affecting current task\n6. task_id of current task\n7. Instruction: AFTER COMPACTION first read SESSION_STATE.md and CLAUDE.md section 4, then continue from step marked with →\n\nDO NOT preserve: contents of vault files (can be re-read), intermediate reasoning, code already saved to files.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/session-start.sh"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/pre-compact.sh"
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/post-compact.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

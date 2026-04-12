@@ -1,0 +1,130 @@
+# CLAUDE.md — {{PROJECT_NAME}}
+
+> Obsidian Vault = external memory. Only paths, rules and protocol here.
+
+## 1. PATHS
+
+```
+VAULT    = "~/Documents/Obsidian Vault/{{VAULT_NAME}}"
+REPO     = "{{PROJECT_ROOT}}"
+STATE    = "$VAULT/03 — Active Development and Current Tasks/SESSION_STATE.md"
+```
+
+## 2. VAULT MAP
+
+| Folder | Contents | When to read |
+|--------|----------|--------------|
+| `00` | README, stack, versions | New context start |
+| `01` | Architecture, API, DB | Tasks affecting architecture |
+| `02/YYYY-MM/` | History of ALL changes | **REQUIRED** before modifying a module |
+| `03` | **SESSION_STATE.md**, WIP | **FIRST THING** on every launch |
+| `04` | Bug postmortems | Working with modules that had bugs |
+| `05` | Tech debt, risks | Refactoring, large tasks |
+| `06` | Ideas, feature requests | Planning features |
+| `07` | Module documentation | **REQUIRED** before modifying a module |
+| `08` | Snippets, patterns | Writing new code |
+| `09` | Servers, CI/CD, deploy | Infrastructure tasks |
+| `10` | Git-flow, standards | PRs, commits, vault entries |
+
+## 3. CRITICAL RULES
+
+> Project-specific rules. Fill in manually.
+
+| # | Rule | Consequence |
+|---|------|-------------|
+| 1 | _(add your rules)_ | |
+
+## 4. CONTINUITY PROTOCOL
+
+> PreCompact/PostCompact hooks automatically save and restore context.
+> These rules are for Claude behavior that hooks can't enforce.
+
+### SESSION_STATE.md — format
+
+```markdown
+---
+last_updated: YYYY-MM-DD HH:MM
+task_id: "short-id-001"
+compression_count: 0
+---
+# ACTIVE TASK
+## Task
+[EXACT description]
+## Plan
+- [x] Step 1: [action] — DONE [result]
+→ [ ] Step 2: [action] ← CURRENT
+- [ ] Step 3: [action]
+## Changed Files
+| File | Change | Status |
+|------|--------|--------|
+## Decisions
+| Decision | Why | Rejected |
+|----------|-----|----------|
+## User Context
+[Verbatim]
+## Next Action
+[File + specific action. "Continue working" = INVALID]
+---
+# QUEUE (one-liners, no details)
+| # | Task | Priority | Status |
+|---|------|----------|--------|
+```
+
+### Read/Write Rules
+
+**WRITE to STATE** — BEFORE and AFTER each step, on file changes, on decisions, on user clarifications, every 10 messages forced.
+
+**READ STATE** — on first message, on "continue/next", on context detail loss, before continuing multi-step tasks.
+
+### Recovery After Compaction
+
+```
+A: Read STATE
+B: Read latest file in 02/[current month]/
+C: Read WIP from 03/
+D: compression_count += 1
+E: Find → in plan → execute THAT step
+```
+
+**FORBIDDEN** after recovery: asking "where did we stop", retelling what was done, changing plan, skipping steps.
+
+**REQUIRED:** continue from → step, first message = "Next — [action]".
+
+### Rotation
+
+- ACTIVE TASK — always 1 task with details
+- Queue — one-liners, no limit
+- Completed task → entry in `02/`, remove from STATE
+- Next from queue → expand to ACTIVE TASK
+- Goal: STATE < 80 lines
+
+### STATE Validation
+
+Before saving check: "Next Action" contains filename + action, exactly one line with →, `last_updated` is current. Invalid STATE — rewrite.
+
+## 5. WORK PROTOCOL
+
+```
+STEP 0 → Read STATE. Unfinished? Ask user.
+STEP 1 → Identify modules. Read 02/ + 07/ for them. Major: + 08/ + 01/.
+STEP 2 → Plan in STATE (steps = specific actions with filenames).
+          Batch: first → ACTIVE, rest → queue.
+STEP 3 → Execute. BEFORE step → move →. AFTER → mark [x].
+STEP 4 → Done → entry in 02/. Update 07/ 04/ 05/ 08/ as needed.
+STEP 5 → Rotate STATE: clean up, next from queue → ACTIVE → STEP 1.
+```
+
+## 6. ABSOLUTE RULES
+
+1. STATE is updated BEFORE and AFTER each step
+2. First action on launch = read STATE
+3. Code without reading module history (02/ + 07/) = forbidden
+4. Every code change = entry in 02/
+5. Problems → 05/ even if not fixing now
+6. After compaction → recovery algorithm, silently
+7. Plan ONLY in STATE, not in context
+8. "Next action" without filename = invalid
+9. Missing folder/file → create immediately
+10. Vault beats context on conflict
+11. ACTIVE TASK = 1, rest are one-liners in queue
+12. Completed task → 02/ → remove from STATE
