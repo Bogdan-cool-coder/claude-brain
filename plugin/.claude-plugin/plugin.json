@@ -1,0 +1,9 @@
+{
+  "name": "claude-brain",
+  "version": "1.2.0",
+  "description": "Persistent memory system for Claude. Session continuity, vault-based memory, token economy, and auto-recovery after context compaction.",
+  "author": {
+    "name": "Bogdan Yadykin"
+  },
+  "keywords": ["brain", "session-state", "vault", "continuity", "compaction", "memory", "obsidian"]
+}

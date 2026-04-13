@@ -1,2 +1,4 @@
 *.backup.*
 .DS_Store
+*.tmp
+tmp_obj_*

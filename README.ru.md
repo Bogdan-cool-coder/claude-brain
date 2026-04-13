@@ -12,15 +12,15 @@ Claude Code теряет весь контекст при достижении �
 
 Claude Brain использует Obsidian Vault (или любую папку) как внешнюю память с автоматическим управлением состоянием.
 
-### Две версии:
+### Три версии:
 
-| | CLI версия | Desktop версия |
-|--|-----------|---------------|
-| **Защита** | 5/5 уровней (полная) | 3/5 уровней (частичная) |
-| **Как работает** | Хуки авто-сохраняют/восстанавливают контекст | Усиленный CLAUDE.md + launchd бэкапы |
-| **Платформа** | Claude Code CLI в Терминале | Claude Desktop приложение (Code tab) |
-| **После сжатия** | Claude мгновенно продолжает с точного шага | Claude читает STATE по инструкциям из CLAUDE.md |
-| **Бэкапы** | По событию хука + каждые 5 мин | Каждые 5 мин (launchd) |
+| | CLI версия | Desktop версия | Cowork Plugin |
+|--|-----------|---------------|---------------|
+| **Защита** | 5/5 уровней (полная) | 3/5 уровней (частичная) | 5/5 уровней (полная) |
+| **Как работает** | Хуки авто-сохраняют/восстанавливают контекст | Усиленный CLAUDE.md + launchd бэкапы | Plugin авто-загружает CLAUDE.md + skill устанавливает хуки |
+| **Платформа** | Claude Code CLI в Терминале | Claude Desktop приложение (Code tab) | Claude Cowork (Desktop приложение) |
+| **После сжатия** | Claude мгновенно продолжает с точного шага | Claude читает STATE по инструкциям из CLAUDE.md | Claude мгновенно продолжает с точного шага |
+| **Установка** | `bash install.sh` → выбрать CLI | `bash install.sh` → выбрать Desktop | Скачать `.plugin` → открыть в Cowork → сказать «настрой brain» |
 
 ### CLI: 5 уровней защиты
 
@@ -49,9 +49,18 @@ Claude Brain использует Obsidian Vault (или любую папку) 
 - **macOS** или **Linux**
 - **Claude Code CLI** (`npm install -g @anthropic-ai/claude-code`) — для CLI версии
 - **Claude Desktop приложение** — для Desktop версии
+- **Claude Cowork** (Desktop приложение) — для Plugin версии
 - Папка для vault'ов (рекомендуется Obsidian, но необязательно)
 
-### Установка
+### Вариант A: Cowork Plugin (самый простой)
+
+1. Скачай [`claude-brain.plugin`](claude-brain.plugin) из этого репо
+2. Открой в Claude Cowork — нажми **Install**
+3. В любой сессии скажи: **«настрой brain»** или **«setup brain»**
+4. Укажи имя vault и путь когда спросит
+5. Готово — хуки, STATE и папки vault создаются автоматически
+
+### Вариант B: CLI / Desktop установка
 
 ```bash
 git clone https://github.com/bogdan-cool-coder/claude-brain.git
@@ -169,6 +178,7 @@ claude-brain list          # Список всех проектов
 ```
 claude-brain/
 ├── install.sh              # Главный установщик (выбор CLI/Desktop/Оба)
+├── claude-brain.plugin     # Готовый к установке файл Cowork plugin
 ├── cli/
 │   ├── install.sh          # Установщик CLI версии
 │   ├── hooks/              # Хук-скрипты (SessionStart, PreCompact, PostCompact)
@@ -177,6 +187,12 @@ claude-brain/
 │   ├── install.sh          # Установщик Desktop версии
 │   ├── backup-state.sh     # Скрипт бэкапа для launchd
 │   └── settings.desktop.json  # Настройки только с compactPrompt
+├── plugin/                 # Исходники Cowork plugin
+│   ├── .claude-plugin/     # Манифест plugin
+│   ├── CLAUDE.md           # Always-on правила (авто-загружаются plugin'ом)
+│   └── skills/
+│       ├── brain-protocol/ # Полная методика vault, STATE формат, шаблоны
+│       └── brain-setup/    # Авто-установка хуков для нового проекта
 └── shared/
     ├── claude-brain         # CLI утилита управления
     └── templates/
