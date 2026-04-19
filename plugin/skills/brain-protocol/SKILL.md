@@ -6,7 +6,7 @@ description: >
   before any multi-step task, when context feels incomplete, or when working with
   SESSION_STATE.md, vault structure, or change logs.
 metadata:
-  version: "0.1.0"
+  version: "2.0.0"
   author: "Bogdan Yadykin"
 ---
 
@@ -22,24 +22,34 @@ vault_name=ProjectName
 Derive paths:
 ```
 VAULT = ~/Documents/Obsidian Vault/$vault_name
-STATE = $VAULT/03 — Активная Разработка и Детали Текущих Задач/SESSION_STATE.md
+STATE = $VAULT/4. Активная работа/SESSION_STATE.md
 ```
 
-## Vault Map
+## Vault Map (6-folder structure)
 
 | Folder | Contents | When to read |
 |--------|----------|-------------|
-| `00` | README, stack, versions | New context start |
-| `01` | Architecture, API, DB | Tasks affecting architecture |
-| `02/YYYY-MM/` | History of ALL changes | **MANDATORY** before changing a module |
-| `03` | **SESSION_STATE.md**, WIP | **FIRST THING** every session |
-| `04` | Bug analyses | Working on a module with past bugs |
-| `05` | Tech debt, risks | Refactoring, large tasks |
-| `06` | Ideas, feature requests | Planning features |
-| `07` | Module documentation | **MANDATORY** before changing a module |
-| `08` | Snippets, patterns | Writing new code |
-| `09` | Servers, CI/CD, deploy | Infrastructure tasks |
-| `10` | Git-flow, standards, **TEMPLATES.md** | PR, commits, vault entries |
+| `1. Проект/` | Project overview, tech stack, architecture | New context start, architecture tasks |
+| `2. Модули/` | Module documentation (one file per module, with YAML properties) | **MANDATORY** before changing a module |
+| `3. Журнал/YYYY-MM/` | History of ALL changes | **MANDATORY** before changing a module |
+| `4. Активная работа/` | **SESSION_STATE.md**, _state_backups/ | **FIRST THING** every session |
+| `5. Планы/` | Roadmap, bugs & tech debt, ideas, feature requests | Planning, refactoring, large tasks |
+| `6. Справочник/` | Design system, core functions, code patterns, **TEMPLATES.md** | Writing new code, PR, vault entries |
+
+### YAML Properties (every file must have)
+```yaml
+---
+title: Module Name
+type: module | changelog | audit | reference | roadmap | project
+status: active | done | draft | archived
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+related:
+  - "[[Related Module 1]]"
+  - "[[Related Module 2]]"
+owner: Author
+---
+```
 
 ## SESSION_STATE.md Format
 
@@ -79,12 +89,12 @@ compression_count: 0
 
 ```
 STEP 0 → Read STATE. Unfinished task? Ask user.
-STEP 1 → Identify modules. Read 02/ + 07/ for them. Large tasks: + 08/ + 01/.
+STEP 1 → Identify modules. Read 3. Журнал/ + 2. Модули/ for them. Large tasks: + 6. Справочник/ + 1. Проект/.
 STEP 1.5 → grep codebase for existing implementations before writing new code.
 STEP 2 → Create plan in STATE (steps = specific actions with file names).
           Batch: first → ACTIVE, rest → queue.
 STEP 3 → Execute. BEFORE step → move →. AFTER → mark [x].
-STEP 4 → Done → entry in 02/. Update 07/ 04/ 05/ 08/ as needed.
+STEP 4 → Done → entry in 3. Журнал/. Update 2. Модули/, 5. Планы/, 6. Справочник/ as needed.
 STEP 5 → Rotate STATE: clear, next from queue → ACTIVE → STEP 1.
 ```
 
@@ -98,8 +108,8 @@ STEP 5 → Rotate STATE: clear, next from queue → ACTIVE → STEP 1.
 
 ```
 A: Read STATE
-B: Read latest file from 02/[current month]/
-C: Read WIP from 03/
+B: Read latest file from 3. Журнал/[current month]/
+C: Read WIP from 4. Активная работа/
 D: compression_count += 1
 E: Find → in plan → execute THAT step
 ```
@@ -112,7 +122,7 @@ E: Find → in plan → execute THAT step
 
 - ACTIVE TASK — always 1 task with details
 - Queue — one-liners, no limit
-- Completed task → entry in 02/, delete from STATE
+- Completed task → entry in 3. Журнал/, delete from STATE
 - Next from queue → expand into ACTIVE TASK
 - Goal: STATE < 80 lines
 
@@ -150,4 +160,4 @@ After compaction, behavior may shift from careful (Read→Read→Read→Edit) to
 ## Additional Resources
 
 - **`references/project-rules.md`** — project-specific critical rules template
-- **`references/templates.md`** — entry templates for vault folders 02/, 04/, 05/
+- **`references/templates.md`** — entry templates for vault folders (3. Журнал/, 5. Планы/, 2. Модули/)

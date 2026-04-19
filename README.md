@@ -106,21 +106,18 @@ For Desktop: open the project in Claude Desktop's Code tab. CLAUDE.md will be lo
 
 ### Vault Structure
 
-Each project gets a vault folder with 11 directories:
+Each project gets a vault folder with 6 directories (v2.0):
 
 ```
 Obsidian Vault/MyProject/
-├── 00 — General Info/
-├── 01 — Architecture/
-├── 02 — Change History/        (by month)
-├── 03 — Active Development/    (SESSION_STATE.md lives here)
-├── 04 — Bug Reports/
-├── 05 — Tech Debt/
-├── 06 — Ideas/
-├── 07 — Module Docs/
-├── 08 — Snippets/
-├── 09 — Infrastructure/
-└── 10 — Process/
+├── 1. Проект/              # Overview, tech stack, architecture
+├── 2. Модули/              # One file per module (with YAML properties)
+├── 3. Журнал/              # Change log (by month)
+│   └── YYYY-MM/
+├── 4. Активная работа/     # SESSION_STATE.md lives here
+│   └── _state_backups/
+├── 5. Планы/               # Roadmap, bugs, tech debt, ideas
+└── 6. Справочник/          # Design system, core functions, patterns
 ```
 
 ### SESSION_STATE.md

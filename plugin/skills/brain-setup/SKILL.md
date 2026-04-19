@@ -5,7 +5,7 @@ description: >
   "настрой brain", "setup brain", "подключи brain к проекту", "initialize brain",
   or when brain.conf is missing and the project needs session continuity configured.
 metadata:
-  version: "0.1.0"
+  version: "2.0.0"
   author: "Bogdan Yadykin"
 ---
 
@@ -33,24 +33,19 @@ vault_base=<VaultBasePath>
 Create these folders in the vault if they don't exist:
 ```
 $VAULT_BASE/$VAULT_NAME/
-├── 00 — Обзор Проекта/
-├── 01 — Архитектура/
-├── 02 — Журнал Изменений/
+├── 1. Проект/              # Overview, tech stack, architecture
+├── 2. Модули/              # One file per module (with YAML properties)
+├── 3. Журнал/              # Change log entries
 │   └── YYYY-MM/
-├── 03 — Активная Разработка и Детали Текущих Задач/
+├── 4. Активная работа/     # SESSION_STATE.md + WIP
 │   └── _state_backups/
-├── 04 — Разборы Багов/
-├── 05 — Техдолг и Риски/
-├── 06 — Идеи/
-├── 07 — Документация Модулей/
-├── 08 — Сниппеты и Паттерны/
-├── 09 — Инфраструктура/
-└── 10 — Процесс Разработки/
+├── 5. Планы/               # Roadmap, bugs, tech debt, ideas
+└── 6. Справочник/          # Design system, core functions, patterns, TEMPLATES.md
 ```
 
 ## Step 4: Create SESSION_STATE.md
 
-Write initial STATE at `$VAULT/03 — Активная Разработка и Детали Текущих Задач/SESSION_STATE.md`:
+Write initial STATE at `$VAULT/4. Активная работа/SESSION_STATE.md`:
 
 ```markdown
 ---

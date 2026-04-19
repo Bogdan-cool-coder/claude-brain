@@ -3,7 +3,7 @@
 # Reminds Claude to read SESSION_STATE.md first
 
 VAULT="__VAULT_BASE__/__VAULT_NAME__"
-STATE="$VAULT/03 — Активная Разработка и Детали Текущих Задач/SESSION_STATE.md"
+STATE="$VAULT/4. Активная работа/SESSION_STATE.md"
 
 CONTEXT="СТАРТ СЕССИИ. ПЕРВЫМ ДЕЛОМ прочитай: 1) SESSION_STATE.md: $STATE 2) Секцию 4 CLAUDE.md (протокол непрерывности)."
 

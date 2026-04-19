@@ -3,7 +3,7 @@
 # Injects recovery instructions into Claude's context
 
 VAULT="__VAULT_BASE__/__VAULT_NAME__"
-STATE="$VAULT/03 — Активная Разработка и Детали Текущих Задач/SESSION_STATE.md"
+STATE="$VAULT/4. Активная работа/SESSION_STATE.md"
 
 CONTEXT="КОНТЕКСТ СЖАТ. ОБЯЗАТЕЛЬНО: 1) Прочитать SESSION_STATE.md: $STATE 2) Прочитать CLAUDE.md 3) Найти строку с → в плане 4) Инкрементировать compression_count 5) Продолжить этот шаг. ЗАПРЕЩЕНО: спрашивать на чём остановились, пересказывать, менять план. ПЕРВОЕ СООБЩЕНИЕ = Далее — [действие]."
 

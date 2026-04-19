@@ -106,21 +106,18 @@ claude              # CLI версия
 
 ### Структура Vault
 
-Каждый проект получает папку vault с 11 директориями:
+Каждый проект получает папку vault с 6 директориями (v2.0):
 
 ```
 Obsidian Vault/MyProject/
-├── 00 — General Info/
-├── 01 — Architecture/
-├── 02 — Change History/        (по месяцам)
-├── 03 — Active Development/    (SESSION_STATE.md здесь)
-├── 04 — Bug Reports/
-├── 05 — Tech Debt/
-├── 06 — Ideas/
-├── 07 — Module Docs/
-├── 08 — Snippets/
-├── 09 — Infrastructure/
-└── 10 — Process/
+├── 1. Проект/              # Обзор, стек, архитектура
+├── 2. Модули/              # Один файл на модуль (с YAML properties)
+├── 3. Журнал/              # Журнал изменений (по месяцам)
+│   └── YYYY-MM/
+├── 4. Активная работа/     # SESSION_STATE.md здесь
+│   └── _state_backups/
+├── 5. Планы/               # Roadmap, баги, техдолг, идеи
+└── 6. Справочник/          # Стили, core функции, паттерны
 ```
 
 ### SESSION_STATE.md

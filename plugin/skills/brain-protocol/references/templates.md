@@ -1,15 +1,25 @@
-# Vault Entry Templates
+# Vault Entry Templates (v2.0 — 6-folder structure)
 
-## 02/ — Change Log Entry
+## 3. Журнал/ — Change Log Entry
 
-File: `02/YYYY-MM/YYYY-MM-DD-module-name.md`
+File: `3. Журнал/YYYY-MM/YYYY-MM-DD — description.md`
 
 ```markdown
-# [Module] — [Brief description]
+---
+title: [Task name]
+type: changelog
+status: done
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+related:
+  - "[[Module1]]"
+  - "[[Module2]]"
+owner: Author
+---
+# [Task name]
 
-**Date:** YYYY-MM-DD
 **Task ID:** short-id-001
-**Author:** [name]
+**Type:** feature | bugfix | refactor | hotfix | chore
 
 ## What changed
 - [File]: [description of change]
@@ -25,79 +35,85 @@ File: `02/YYYY-MM/YYYY-MM-DD-module-name.md`
 - [ ] Manual test: [specific scenario]
 ```
 
-## 04/ — Bug Analysis Entry
+## 5. Планы/ — Bug / Tech Debt Entry
 
-File: `04/YYYY-MM-DD-bug-description.md`
+File: `5. Планы/[topic].md` (append or separate file)
 
 ```markdown
+---
+title: Bug - [Title]
+type: bugfix
+status: open
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+related:
+  - "[[Module]]"
+owner: Author
+---
 # Bug: [Title]
 
-**Date:** YYYY-MM-DD
-**Module:** [name]
+**Discovered:** YYYY-MM-DD | **Fixed:** YYYY-MM-DD
 **Severity:** Critical / High / Medium / Low
+**Module:** [path]
 
-## Symptoms
-[What user saw]
-
-## Root Cause
-[Technical explanation]
-
-## Fix
-[What was changed and why]
+## Symptoms -> Root Cause -> Fix
+[What user saw] -> [Why] -> [What changed]
 
 ## Prevention
 [Rule or pattern to prevent recurrence]
 ```
 
-## 05/ — Tech Debt Entry
+## 5. Планы/ — Idea / Feature Request
 
-File: `05/YYYY-MM-DD-debt-description.md`
+File: `5. Планы/[topic].md`
 
 ```markdown
-# Tech Debt: [Title]
+---
+title: [Idea]
+type: idea
+status: draft
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+related:
+  - "[[Module]]"
+owner: Author
+---
+# [Idea]
 
-**Date:** YYYY-MM-DD
-**Module:** [name]
-**Priority:** High / Medium / Low
-**Effort:** S / M / L / XL
-
-## Current State
-[What's wrong]
-
-## Desired State
-[What it should be]
-
-## Risks of Inaction
-[What happens if we don't fix this]
-
-## Proposed Approach
-[How to fix]
+**Category:** performance | ux | architecture | security | dx
+**Complexity:** small | medium | large
+**Summary:** [what's proposed]
+**Benefit:** [why]
+**Implementation:** [how]
 ```
 
-## 07/ — Module Documentation
+## 2. Модули/ — Module Documentation
 
-File: `07/module-name.md`
+File: `2. Модули/[Module Name].md`
 
 ```markdown
-# Module: [Name]
+---
+title: [Module Name]
+type: module
+status: active
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+related:
+  - "[[Related Module 1]]"
+  - "[[Related Module 2]]"
+owner: Author
+---
+# [Module Name]
 
-## Purpose
+## Overview
 [What this module does]
 
-## Key Files
-| File | Role |
-|------|------|
-| `path/to/file.ts` | [description] |
+## Key Components
+[Files, hooks, services]
 
-## Dependencies
-- [Other modules this depends on]
+## API Endpoints
+[Table of endpoints]
 
-## API Surface
-[Main exports, endpoints, etc.]
-
-## Known Issues
-- [Link to 04/ or 05/ entries]
-
-## Last Updated
-YYYY-MM-DD
+## Business Rules
+[Non-trivial logic]
 ```

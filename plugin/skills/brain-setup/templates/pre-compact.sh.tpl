@@ -3,8 +3,8 @@
 # Creates backup of SESSION_STATE
 
 VAULT="__VAULT_BASE__/__VAULT_NAME__"
-STATE="$VAULT/03 — Активная Разработка и Детали Текущих Задач/SESSION_STATE.md"
-BACKUP_DIR="$VAULT/03 — Активная Разработка и Детали Текущих Задач/_state_backups"
+STATE="$VAULT/4. Активная работа/SESSION_STATE.md"
+BACKUP_DIR="$VAULT/4. Активная работа/_state_backups"
 TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
 
 mkdir -p "$BACKUP_DIR"
