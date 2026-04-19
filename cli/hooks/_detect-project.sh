@@ -28,8 +28,20 @@ VAULT_NAME="${VAULT_NAME:-$PROJECT_DIR_NAME}"
 
 # Build paths
 VAULT="$OBSIDIAN_VAULT_ROOT/$VAULT_NAME"
-STATE="$VAULT/03 — Активная Разработка и Детали Текущих Задач/SESSION_STATE.md"
-BACKUP_DIR="$VAULT/03 — Активная Разработка и Детали Текущих Задач/_state_backups"
+
+# v2.0 (6-folder): "4. Активная работа/"
+# v1.x (11-folder): "03 — Активная Разработка и Детали Текущих Задач/"
+if [ -d "$VAULT/4. Активная работа" ]; then
+  STATE="$VAULT/4. Активная работа/SESSION_STATE.md"
+  BACKUP_DIR="$VAULT/4. Активная работа/_state_backups"
+elif [ -d "$VAULT/03 — Активная Разработка и Детали Текущих Задач" ]; then
+  STATE="$VAULT/03 — Активная Разработка и Детали Текущих Задач/SESSION_STATE.md"
+  BACKUP_DIR="$VAULT/03 — Активная Разработка и Детали Текущих Задач/_state_backups"
+else
+  # Default to v2.0 layout
+  STATE="$VAULT/4. Активная работа/SESSION_STATE.md"
+  BACKUP_DIR="$VAULT/4. Активная работа/_state_backups"
+fi
 
 # JSON escape helper
 json_escape() {

@@ -74,14 +74,21 @@ for dir in "$vault_root"/*; do
 
     dir_name=$(basename "$dir")
 
-    # English folder name
+    # v2.0 (6-folder layout)
+    if [ "$dir_name" = "4. Активная работа" ]; then
+        state_file="$dir/SESSION_STATE.md"
+        project_name=$(basename "$(dirname "$dir")" 2>/dev/null || echo "unknown")
+        backup_state_file "$state_file" "$project_name"
+    fi
+
+    # v1.x fallback: English folder name
     if [ "$dir_name" = "03 — Active Development and Current Tasks" ]; then
         state_file="$dir/SESSION_STATE.md"
         project_name=$(basename "$(dirname "$dir")" 2>/dev/null || echo "unknown")
         backup_state_file "$state_file" "$project_name"
     fi
 
-    # Russian folder name
+    # v1.x fallback: Russian folder name
     if [ "$dir_name" = "03 — Активная Разработка и Детали Текущих Задач" ]; then
         state_file="$dir/SESSION_STATE.md"
         project_name=$(basename "$(dirname "$dir")" 2>/dev/null || echo "unknown")
