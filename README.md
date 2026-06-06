@@ -114,19 +114,22 @@ For Desktop: open the project in Claude Desktop's Code tab. CLAUDE.md will be lo
 
 ### Vault Structure
 
-Each project gets a vault folder with 6 directories (v3.0):
+Each project gets a vault folder with 6 working directories + an optional product wiki (v3.1):
 
 ```
 Obsidian Vault/MyProject/
 ├── 1. Проект/              # Overview, tech stack, architecture
-├── 2. Модули/              # One file per module (with YAML properties)
+├── 2. Модули/              # One file per module (dev-facing tech docs)
 ├── 3. Журнал/              # Change log (by month)
 │   └── YYYY-MM/
 ├── 4. Активная работа/     # SESSION_STATE.md lives here
 │   └── _state_backups/
 ├── 5. Планы/               # Roadmap, bugs, tech debt, ideas
-└── 6. Справочник/          # Design system, core functions, patterns
+├── 6. Справочник/          # Design system, core functions, patterns
+└── 7. Вики/                # Product knowledge base (human-facing: marketing/user/support)
 ```
+
+The **routing matrix** (`references/routing-matrix.md`) makes it explicit which folder to read before — and write after — each kind of work. `7. Вики/` rules: `references/wiki-guide.md`.
 
 ### SESSION_STATE.md
 

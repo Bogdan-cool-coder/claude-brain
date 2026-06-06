@@ -11,7 +11,7 @@
       "description": "Brain Protocol v3.0 — vault-based memory, routing matrix (read-before/write-after per folder), single recovery anchor, parallel-session guard, token economy. Depersonalized reusable skeleton.",
       "category": "productivity",
       "source": "./plugin",
-      "version": "3.0.0",
+      "version": "3.1.0",
       "author": {
         "name": "Bogdan Yadykin"
       },

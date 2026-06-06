@@ -40,8 +40,12 @@ $VAULT_BASE/$VAULT_NAME/
 ├── 4. Активная работа/     # SESSION_STATE.md + WIP
 │   └── _state_backups/
 ├── 5. Планы/               # Roadmap, bugs, tech debt, ideas
-└── 6. Справочник/          # Design system, core functions, patterns, TEMPLATES.md
+├── 6. Справочник/          # Design system, core functions, patterns, TEMPLATES.md
+└── 7. Вики/                # Product knowledge base (human-facing) — see references/wiki-guide.md
+    └── 00 — Индекс.md      # Wiki master index (seed it)
 ```
+
+`7. Вики/` is optional but recommended for products with non-technical audiences (marketing/managers/users). Seed `00 — Индекс.md` from the structure in `references/wiki-guide.md` (sections A. Для сайта / B. User Guide / C. Сценарии / D. Тех / E. Связи / F. Бренд). Articles are filled later.
 
 ## Step 4: Create SESSION_STATE.md
 
