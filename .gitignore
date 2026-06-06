@@ -2,3 +2,8 @@
 .DS_Store
 *.tmp
 tmp_obj_*
+
+# packaged plugin artifacts / Finder duplicates
+*.plugin
+* [0-9].*
+.DS_Store
