@@ -1,4 +1,4 @@
-# Vault Entry Templates (v2.0 — 6-folder structure)
+# Vault Entry Templates (v3.0 — 6-folder structure)
 
 ## 3. Журнал/ — Change Log Entry
 

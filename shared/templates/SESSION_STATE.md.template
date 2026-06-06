@@ -2,24 +2,20 @@
 last_updated: {{DATE}}
 task_id: ""
 compression_count: 0
+session_label: ""
 ---
-# ACTIVE TASK
-## Task
-_(no active task)_
-## Plan
-## Changed Files
-| File | Change | Status |
-|------|--------|--------|
-## Verified/Found
-| What searched | Where found | Key detail |
-|---------------|-------------|------------|
-## Decisions
-| Decision | Why | Rejected |
-|----------|-----|----------|
-## User Context
-## Next Action
-Waiting for task from user.
----
-# QUEUE (one-liners, no details)
-| # | Task | Priority | Status |
-|---|------|----------|--------|
+# SESSION_STATE — {{PROJECT_NAME}}
+
+## Сейчас
+_(нет активной задачи)_
+
+→ Следующий шаг: ожидание задачи от пользователя
+
+## Очередь
+<!-- однострочные задачи, без деталей -->
+
+## Решения (свежие)
+<!-- решение — почему (детали в 3. Журнал/) -->
+
+## Заметки / контекст
+<!-- свободный нарратив: тестовые креды, ссылки на журналы/планы, флаги для ревью -->

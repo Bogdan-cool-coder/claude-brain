@@ -12,6 +12,14 @@ Claude Code loses all context when conversation hits 200K tokens. After compacti
 
 Claude Brain uses Obsidian Vault (or any folder) as external memory with automatic state management.
 
+### What's new in v3.0
+
+- **Routing matrix** — explicit rules for *which vault folder to read before, and write after* each kind of work (no more guessing).
+- **Single recovery anchor** — exactly one `→ Следующий шаг:` line; hooks resume from it after compaction.
+- **Deterministic `compression_count`** — bumped by the PreCompact hook, not by Claude.
+- **Parallel-session guard** — warns if SESSION_STATE was just touched by another session; one canonical STATE, never duplicated.
+- **Fully depersonalized** — reusable skeleton; project specifics live in `.claude/brain.conf` + project CLAUDE.md.
+
 ### Three versions available:
 
 | | CLI Version | Desktop Version | Cowork Plugin |
@@ -106,7 +114,7 @@ For Desktop: open the project in Claude Desktop's Code tab. CLAUDE.md will be lo
 
 ### Vault Structure
 
-Each project gets a vault folder with 6 directories (v2.0):
+Each project gets a vault folder with 6 directories (v3.0):
 
 ```
 Obsidian Vault/MyProject/

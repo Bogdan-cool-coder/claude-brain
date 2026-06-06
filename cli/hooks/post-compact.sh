@@ -1,8 +1,8 @@
 #!/bin/bash
 # =============================================================
-# PostCompact Hook (universal)
-# Runs AFTER context compaction
-# Injects full recovery context into Claude
+# PostCompact Hook (universal) — Brain Protocol v3.0
+# Runs AFTER context compaction.
+# Injects recovery context. compression_count already bumped by pre-compact.
 # =============================================================
 
 HOOK_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -14,20 +14,23 @@ if [ ! -d "$VAULT" ]; then
   exit 0
 fi
 
-CONTEXT="CONTEXT COMPACTED [$VAULT_NAME]. REQUIRED: 1) Read SESSION_STATE.md: $STATE 2) Read CLAUDE.md section 4 3) Find line with → in plan 4) Increment compression_count 5) Continue from that step. FORBIDDEN: asking what we were doing, retelling, changing plan. FIRST MESSAGE = Next — [action]."
+CONTEXT="CONTEXT COMPACTED [$VAULT_NAME]. ОБЯЗАТЕЛЬНО: 1) Прочитать SESSION_STATE.md: $STATE 2) Прочитать Continuity-блок в CLAUDE.md 3) Найти строку '→ Следующий шаг:' 4) Продолжить С ЭТОГО шага. ЗАПРЕЩЕНО: спрашивать на чём остановились, пересказывать сделанное, менять план. ПЕРВОЕ сообщение = 'Далее — [действие из STATE]'."
 
 if [ -f "$STATE" ]; then
   TASK_ID=$(grep "^task_id:" "$STATE" 2>/dev/null | head -1 | sed 's/^task_id: *//' | tr -d '"')
-  CURRENT_STEP=$(grep "^→" "$STATE" 2>/dev/null | head -1)
-  NEXT_ACTION=$(sed -n '/^## Следующее действие/,/^##/p' "$STATE" 2>/dev/null | grep -v "^##" | head -1 | sed 's/^ *//')
-  # Fallback to English header
-  if [ -z "$NEXT_ACTION" ]; then
-    NEXT_ACTION=$(sed -n '/^## Next Action/,/^##/p' "$STATE" 2>/dev/null | grep -v "^##" | head -1 | sed 's/^ *//')
+
+  # Single canonical anchor (v3.0) with backward-compatible fallbacks (v2.0)
+  NEXT_STEP=$(grep "^→ Следующий шаг:" "$STATE" 2>/dev/null | head -1)
+  [ -z "$NEXT_STEP" ] && NEXT_STEP=$(grep "^→" "$STATE" 2>/dev/null | head -1)
+  if [ -z "$NEXT_STEP" ]; then
+    NEXT_STEP=$(sed -n '/^## Следующее действие/,/^##/p' "$STATE" 2>/dev/null | grep -v "^##" | head -1 | sed 's/^ *//')
+  fi
+  if [ -z "$NEXT_STEP" ]; then
+    NEXT_STEP=$(sed -n '/^## Next Action/,/^##/p' "$STATE" 2>/dev/null | grep -v "^##" | head -1 | sed 's/^ *//')
   fi
 
   [ -n "$TASK_ID" ] && CONTEXT="$CONTEXT TASK: $TASK_ID."
-  [ -n "$CURRENT_STEP" ] && CONTEXT="$CONTEXT CURRENT STEP: $CURRENT_STEP"
-  [ -n "$NEXT_ACTION" ] && CONTEXT="$CONTEXT NEXT: $NEXT_ACTION"
+  [ -n "$NEXT_STEP" ] && CONTEXT="$CONTEXT NEXT: $NEXT_STEP"
 else
   CONTEXT="$CONTEXT WARNING: SESSION_STATE.md not found. Create immediately."
 fi

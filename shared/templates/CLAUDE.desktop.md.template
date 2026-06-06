@@ -1,210 +1,89 @@
-# CLAUDE.md — {{ PROJECT_NAME }} (Desktop Version)
+# CLAUDE.md — {{PROJECT_NAME}} (Desktop)
 
-> Obsidian Vault = external memory. Here only paths, rules, and protocol.
-> Record templates → `10 — Процесс Разработки/TEMPLATES.md`
+> Obsidian Vault = внешняя память. Здесь — только пути, правила и протокол.
+> Brain Protocol v3.0 · **Desktop: хуков НЕТ — Claude сохраняет контекст вручную.**
 
-## 1. PATHS
+## 1. Пути
 
 ```
-VAULT    = "{{ VAULT_PATH }}"
-REPO     = "{{ REPO_PATH }}"
-STATE    = "$VAULT/03 — Активная Разработка и Детали Текущих Задач/SESSION_STATE.md"
+VAULT = "{{VAULT_PATH}}"
+REPO  = "{{REPO_PATH}}"
+STATE = "$VAULT/4. Активная работа/SESSION_STATE.md"   # ОДИН канонический файл
 ```
 
-## 2. VAULT MAP
+## 2. Карта vault (6 папок)
 
-| Folder | Contents | When to read |
-|--------|----------|--------------|
-| `00` | README, stack, versions | Start of new context |
-| `01` | Architecture, API, DB | Tasks affecting architecture |
-| `02/YYYY-MM/` | History of ALL changes | **MANDATORY** before modifying module |
-| `03` | **SESSION_STATE.md**, WIP | **FIRST THING** on every startup |
-| `04` | Bug breakdowns | Working with module that had bugs |
-| `05` | Tech debt, risks | Refactoring, large tasks |
-| `06` | Ideas, feature requests | Planning functionality |
-| `07` | Module documentation | **MANDATORY** before modifying module |
-| `08` | Snippets, patterns | Writing new code |
-| `09` | Servers, CI/CD, deploy | Infrastructure tasks |
-| `10` | Git-flow, standards, **TEMPLATES.md** | PR, commits, vault records |
+| Папка | Что внутри | Когда читать |
+|---|---|---|
+| `1. Проект/` | Обзор, стек, архитектура | новый контекст, архитектурные задачи |
+| `2. Модули/` | По файлу на модуль (с YAML-свойствами) | **ОБЯЗАТЕЛЬНО** перед правкой модуля |
+| `3. Журнал/ГГГГ-ММ/` | История ВСЕХ изменений | **ОБЯЗАТЕЛЬНО** перед правкой модуля |
+| `4. Активная работа/` | **SESSION_STATE.md**, `_state_backups/` | **ПЕРВЫМ ДЕЛОМ** каждую сессию |
+| `5. Планы/` | Роадмап, баги, тех-долг, идеи | планирование, рефакторинг, крупные задачи |
+| `6. Справочник/` | Дизайн-система, паттерны, шаблоны записей | новый код, PR, записи в vault |
 
-## 3. CRITICAL RULES
+## 3. 🧭 Матрица-роутер: когда что читать и писать
 
-> Details and code examples → `01/` and `08/`. Here — reminders.
+| Триггер | ЧИТАТЬ до | ПИСАТЬ после |
+|---|---|---|
+| Старт сессии / «продолжай» | `4.`(STATE); новый контекст — `1. Проект` | — |
+| Перед правкой модуля | `2. Модули/<m>` + свежее `3. Журнал` | — |
+| Реализация фичи / нового кода | **grep кода** + `2. Модули` + `5. Планы` | — |
+| Завершён юнит работы | — | запись в `3. Журнал/ГГГГ-ММ` (+ `2. Модули` если модуль изменился, + `5. Планы` если сдвинулся объём) |
+| Новый модуль / подсистема | `1. Проект` + `6. Справочник` | новый файл `2. Модули` + паттерны `6. Справочник` |
+| Принято решение/трейдофф | — | STATE → «Решения» + `3. Журнал` |
+| Сдвиг плана/объёма | `5. Планы` | `5. Планы` + флаг ревью |
 
-| # | Rule | Consequence of violation |
-|---|------|--------------------------|
-| 1 | `Number()` around every `Decimal` from Prisma | string concat, `[object Object]` |
-| 2 | `isDeleted: false` in EVERY transaction query | show deleted data |
-| 3 | `householdId` in EVERY DB query | data leakage between households |
-| 4 | Multi-writes via `$transaction(async (tx) => ...)` | partial writes |
-| 5 | After credit account balance → `recalcCreditBalance()` | broken dashboard |
-| 6 | Balance changes → `changeLog` in same transaction | audit loss |
-| 7 | Prisma v6: `$extends()`, `Prisma.JsonNull` | TS errors |
-| 8 | `createdBy`=userId(JWT), `memberId`=UserProfile.id | wrong profile |
-| 9 | Switching from transfer → null `transferToAccountId/Amount` | dangling refs |
-| 10 | `Date` → `.toISOString()` before JSON | invalid dates |
+**Запреты:** ❌ не плодить второй SESSION_STATE (он один; при реорганизации vault — `mv`, не copy). ❌ не раздувать STATE. ❌ не лезть в vault чужого проекта. ❌ готовые файлы — только точечные правки.
 
-**Before commit:** `cd packages/backend && npx tsc --noEmit && cd ../.. && pnpm test && pnpm format:check`
+## 4. 🧠 Continuity (Desktop — ВРУЧНУЮ)
 
-## 4. CONTINUITY PROTOCOL
+> **Хуки в Desktop не работают.** Эти правила — единственная защита от потери контекста.
 
-> **CRITICAL: Desktop version has NO hooks.** Claude MUST manually self-preserve context.
+- **Каждые 5 сообщений** — обновлять STATE (last_updated, прогресс, изменённые файлы). Без исключений.
+- **Перед любым длинным действием** (генерация >50 строк, рефакторинг, мульти-файловые правки) — сохранить STATE.
+- **После сжатия — сразу:** прочитать STATE → найти `→ Следующий шаг:` → инкрементировать `compression_count` (вручную, хук этого не сделает) → продолжить С ЭТОГО шага. Первое сообщение = «Далее — [действие]».
+- ЗАПРЕЩЕНО после сжатия: спрашивать «на чём остановились», пересказывать, менять план.
 
-### Desktop vs CLI
-
-| Aspect | CLI | Desktop |
-|--------|-----|---------|
-| PreCompact hook | Yes, saves context | NO - manual only |
-| PostCompact hook | Yes, injects context | NO - manual only |
-| Self-preservation | Optional | **REQUIRED** |
-| Backup interval | Automatic (hooks) | Every 5 min (launchd) |
-| Recovery trigger | PostCompact hook | Manual by Claude |
-
-### CRITICAL: Manual Context Self-Preservation (Desktop Only)
-
-Hooks DON'T WORK in Desktop Code tab. These rules are your ONLY protection against context loss.
-
-**EVERY 5 MESSAGES** — update STATE (last_updated, plan progress, changed files). No exceptions.
-
-**BEFORE ANY LONG ACTION** (code generation >50 lines, refactoring, multi-file edits) — save STATE with current progress. Compaction can happen any moment.
-
-**Recovery after compaction — DO THIS IMMEDIATELY after reading summary:**
-
-1. Read this file: CLAUDE.md section 4 (you are here)
-2. Read STATE: `$VAULT/03 — Активная Разработка и Детали Текущих Задач/SESSION_STATE.md`
-3. Read latest: `$VAULT/02/[current month]/` — find most recent change log for active modules
-4. Read WIP: `$VAULT/03/` — any incomplete notes
-5. Increment compression_count in STATE
-6. Find line with → in plan
-7. First message = "Continuing — [exact action from → step]"
-8. FORBIDDEN after recovery: asking "where were we", recaps, plan changes, step skips
-
-### SESSION_STATE.md — Format
-
+### Формат SESSION_STATE.md
 ```markdown
 ---
-last_updated: YYYY-MM-DD HH:MM
-task_id: "short-id-001"
+last_updated: ГГГГ-ММ-ДД ЧЧ:ММ
+task_id: "short-id"
 compression_count: 0
+session_label: ""
 ---
-# ACTIVE TASK
-## Task
-[EXACT formulation]
-## Plan
-- [x] Step 1: [action] — DONE [result]
-→ [ ] Step 2: [action] ← CURRENT
-- [ ] Step 3: [action]
-## Changed files
-| File | Change | Status |
-|------|--------|--------|
-## Verified/Found
-| What searched | Where found | Key detail |
-|---------------|-------------|------------|
-## Solutions
-| Solution | Why | Rejected |
-|----------|-----|---------|
-## Context from user
-[Verbatim]
-## Next action
-[Filename + specific action. "Continue work" = INVALID]
----
-# QUEUE (one-liners, no details)
-| # | Task | Priority | Status |
-|---|------|----------|--------|
+# SESSION_STATE — {{PROJECT_NAME}}
+## Сейчас
+[над чем работаем, фаза]
+→ Следующий шаг: [файл + КОНКРЕТНОЕ действие]
+## Очередь
+- [ ] однострочные задачи
+## Решения (свежие)
+- [решение] — [почему]
+## Заметки / контекст
+[свободно]
 ```
 
-### Write/Read Rules
+## 5. Критичные правила проекта
 
-**WRITE to STATE** — BEFORE and AFTER each step, when changing file, when solving, when clarifying from user, forced every 10 messages.
+| # | Правило | Последствие нарушения |
+|---|---|---|
+| 1 | _(добавьте правила проекта)_ | |
 
-**READ STATE** — first message in dialogue, on "continue/next", when context details lost, before continuing multi-step task.
+## 6. Экономия токенов
 
-### Recovery After Compaction
+- **grep-before-implement** — всегда искать по кодовой базе перед новым кодом.
+- `--quiet`, `| tail -n 20`; `grep -n` → читать только нужный диапазон.
+- После сжатия — перед Edit перечитать «Заметки/контекст» в STATE.
 
-```
-A: Read STATE
-B: Read latest from 02/[current month]/
-C: Read WIP from 03/
-D: compression_count += 1
-E: Find → in plan → execute THAT step
-```
+## 7. Абсолютные правила
 
-**FORBIDDEN after recovery:** asking "where were we", recaps, changing plan, skipping steps.
-
-**MANDATORY:** continue from → step, first message = "Continuing — [exact action]".
-
-### Rotation
-
-- ACTIVE TASK — always 1 task with details
-- Queue — one-liners, unlimited count
-- Completed task → record in `02/`, remove from STATE
-- Next from queue → expand to ACTIVE TASK
-- Goal: STATE < 80 lines
-
-### STATE Validation
-
-Before saving: "Next action" contains filename + action, exactly one line with →, `last_updated` is current. Invalid STATE — rewrite it.
-
-## 5. TOKEN ECONOMY RULES
-
-> Based on community research (700K+ tokens saved). See: github.com/anthropics/claude-code/issues/13579
-
-### grep-before-implement (saves 70K tokens per incident)
-
-**BEFORE writing any new code or feature:**
-```
-grep -r "feature_keyword" src/    # 100 tokens
-read matching files                # 2K tokens
-ask user if unclear                # 500 tokens
-# TOTAL: ~2.6K vs 70K if you build something that already exists
-```
-
-**RULE:** Never implement functionality without first searching the codebase for existing implementations. `grep` (100 tokens) is ALWAYS cheaper than building from scratch (70K tokens).
-
-### Minimize CLI output waste
-
-- Use `--quiet`, `--no-verbose`, `| tail -n 20` for build/test commands
-- Don't dump entire file contents if you only need specific lines
-- `grep -n` to find line numbers, then read only that range
-
-### After compaction — verify investigation state
-
-After compaction, your behavioral pattern may shift from careful (Read→Read→Read→Edit) to reckless (Edit→Edit). Before any Edit after compaction:
-1. Read STATE — what was already investigated?
-2. Read the "Verified/Found" section — what files/code were already located?
-3. Only then proceed with changes
-
-## 6. WORK PROTOCOL
-
-```
-STEP 0 → Read STATE. Unfinished task? Ask user.
-STEP 1 → Identify modules. Read 02/ + 07/ for them. Large: also 08/ + 01/.
-STEP 1.5 → grep codebase for existing implementations before writing new code.
-STEP 2 → Write plan in STATE (steps = specific actions with filenames).
-         Batch: first → ACTIVE, rest → queue.
-STEP 3 → Execute. BEFORE step → move →. AFTER → mark [x].
-STEP 4 → Done → record in 02/. Update 07/ 04/ 05/ 08/ as needed.
-STEP 5 → Rotate STATE: clear, next from queue → ACTIVE → STEP 1.
-```
-
-Templates → `10 — Процесс Разработки/TEMPLATES.md`
-
-## 7. ABSOLUTE RULES
-
-1. STATE updated BEFORE and AFTER each step
-2. First action on startup = read STATE
-3. Code without reading module history (02/ + 07/) = forbidden
-4. Every code change = record in 02/
-5. Problems → 05/ even if not fixing now
-6. After compaction → recovery algorithm (section 4), silently
-7. Plan ONLY in STATE, not in context
-8. "Next action" without filename = invalid
-9. No folder/file → create immediately
-10. Vault beats context on conflict
-11. ACTIVE TASK = 1, rest one-liners in queue
-12. Completed task → 02/ → remove from STATE
-13. Every 5 messages → update STATE (desktop only)
-14. Every long action → save STATE before (desktop only)
-15. Compaction recovery → read section 4 first (desktop only)
-16. grep before implement — ALWAYS search codebase before writing new code
-17. After compaction — read "Verified/Found" in STATE before any Edit
+1. STATE обновляется ДО и ПОСЛЕ шага и каждые 5 сообщений (Desktop — критично).
+2. Первое действие сессии = чтение STATE.
+3. Правка модуля без чтения `2. Модули` + `3. Журнал` = запрещено.
+4. Завершённый юнит работы = запись в `3. Журнал`.
+5. `→ Следующий шаг:` без имени файла/действия = невалидно.
+6. Vault побеждает контекст при конфликте.
+7. SESSION_STATE — один; дубль не создавать.
+8. Готовые файлы — точечные правки, не широкие проходы.

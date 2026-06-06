@@ -6,158 +6,147 @@ description: >
   before any multi-step task, when context feels incomplete, or when working with
   SESSION_STATE.md, vault structure, or change logs.
 metadata:
-  version: "2.0.0"
+  version: "3.0.0"
   author: "Bogdan Yadykin"
 ---
 
-# Brain Protocol — Full Methodology
+# Brain Protocol — Full Methodology (v3.0)
+
+Обезличенный реюзабельный протокол памяти и непрерывности. Проектная специфика живёт в `.claude/brain.conf` и в project CLAUDE.md, а не здесь.
 
 ## Configuration
 
-Read `.claude/brain.conf` in the project root to get vault parameters:
+Прочитать `.claude/brain.conf` в корне проекта:
 ```
 vault_name=ProjectName
+vault_base=~/Documents/Obsidian Vault   # опционально
+```
+Вывести пути:
+```
+VAULT = <vault_base>/<vault_name>
+STATE = $VAULT/4. Активная работа/SESSION_STATE.md   # ОДИН канонический файл
 ```
 
-Derive paths:
-```
-VAULT = ~/Documents/Obsidian Vault/$vault_name
-STATE = $VAULT/4. Активная работа/SESSION_STATE.md
-```
+## Vault Map (6 папок)
 
-## Vault Map (6-folder structure)
+| Папка | Что внутри | Когда читать |
+|---|---|---|
+| `1. Проект/` | Обзор, стек, архитектура | новый контекст, архитектурные задачи |
+| `2. Модули/` | По файлу на модуль (YAML-свойства) | **ОБЯЗАТЕЛЬНО** перед правкой модуля |
+| `3. Журнал/ГГГГ-ММ/` | История ВСЕХ изменений | **ОБЯЗАТЕЛЬНО** перед правкой модуля |
+| `4. Активная работа/` | **SESSION_STATE.md**, `_state_backups/` | **ПЕРВЫМ ДЕЛОМ** каждую сессию |
+| `5. Планы/` | Роадмап, баги, тех-долг, идеи | планирование, рефакторинг, крупное |
+| `6. Справочник/` | Дизайн-система, паттерны, шаблоны записей | новый код, PR, записи в vault |
 
-| Folder | Contents | When to read |
-|--------|----------|-------------|
-| `1. Проект/` | Project overview, tech stack, architecture | New context start, architecture tasks |
-| `2. Модули/` | Module documentation (one file per module, with YAML properties) | **MANDATORY** before changing a module |
-| `3. Журнал/YYYY-MM/` | History of ALL changes | **MANDATORY** before changing a module |
-| `4. Активная работа/` | **SESSION_STATE.md**, _state_backups/ | **FIRST THING** every session |
-| `5. Планы/` | Roadmap, bugs & tech debt, ideas, feature requests | Planning, refactoring, large tasks |
-| `6. Справочник/` | Design system, core functions, code patterns, **TEMPLATES.md** | Writing new code, PR, vault entries |
-
-### YAML Properties (every file must have)
+### YAML-свойства (у каждого файла vault)
 ```yaml
 ---
-title: Module Name
+title: ...
 type: module | changelog | audit | reference | roadmap | project
 status: active | done | draft | archived
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
-related:
-  - "[[Related Module 1]]"
-  - "[[Related Module 2]]"
+related: ["[[…]]"]
 owner: Author
 ---
 ```
 
-## SESSION_STATE.md Format
+## SESSION_STATE.md — формат (v3.0)
+
+Лёгкий нарратив + машинные якоря (frontmatter + одна строка `→ Следующий шаг:`), которые читают хуки.
 
 ```markdown
 ---
-last_updated: YYYY-MM-DD HH:MM
-task_id: "short-id-001"
+last_updated: ГГГГ-ММ-ДД ЧЧ:ММ
+task_id: "short-id"
 compression_count: 0
+session_label: ""
 ---
-# ACTIVE TASK
-## Задача
-[EXACT wording]
-## План
-- [x] Step 1: [action] — DONE [result]
-→ [ ] Step 2: [action] ← CURRENT
-- [ ] Step 3: [action]
-## Изменённые файлы
-| File | Change | Status |
-|------|--------|--------|
-## Проверено/Найдено
-| What searched | Where found | Key detail |
-|--------------|------------|------------|
-## Решения
-| Decision | Why | Rejected |
-|----------|-----|----------|
-## Контекст от пользователя
-[Verbatim]
-## Следующее действие
-[File + specific action. "Continue work" = INVALID]
----
-# ОЧЕРЕДЬ (one-liners, no details)
-| # | Task | Priority | Status |
-|---|------|----------|--------|
+# SESSION_STATE — <Project>
+## Сейчас
+[над чем работаем прямо сейчас, фаза]
+→ Следующий шаг: [файл + КОНКРЕТНОЕ действие. «продолжить работу» = невалидно]
+## Очередь
+- [ ] однострочные задачи
+## Решения (свежие)
+- [решение] — [почему] (детали в 3. Журнал/)
+## Заметки / контекст
+[свободно: креды, ссылки на журналы/планы, флаги ревью]
 ```
+
+**Канонический якорь — ровно одна строка `→ Следующий шаг:`** (по ней хуки восстанавливают точку возобновления). Не дублировать `→` в нарративе.
+
+## 🧭 Routing Matrix — когда что читать и писать
+
+Ядро протокола. Подробно с примерами — `references/routing-matrix.md`.
+
+| Триггер | ЧИТАТЬ до | ПИСАТЬ после |
+|---|---|---|
+| Старт сессии / «продолжай» | `4.`(STATE); новый контекст — `1. Проект` | — |
+| Перед правкой модуля | `2. Модули/<m>` + свежее `3. Журнал` | — |
+| Реализация фичи / нового кода | **grep кода** + `2. Модули` + `5. Планы` | — |
+| Завершён юнит работы | — | `3. Журнал/ГГГГ-ММ` (+ `2. Модули` если модуль изменился, + `5. Планы` если сдвинулся объём) |
+| Новый модуль / подсистема | `1. Проект` + `6. Справочник` | новый файл `2. Модули` + паттерны `6. Справочник` |
+| Принято решение/трейдофф | — | STATE → «Решения» + `3. Журнал` |
+| Каждый шаг / ~5 сообщений | — | STATE (якоря) |
+| Сдвиг плана/объёма | `5. Планы` | `5. Планы` + флаг ревью |
+
+**Запреты:** ❌ второй SESSION_STATE не создавать (он один; при реорганизации vault — `mv`, не copy). ❌ STATE не раздувать (завершённое → в журнал). ❌ не лезть в vault чужого проекта. ❌ готовые файлы — точечные правки, без широких регенеративных проходов.
 
 ## Work Protocol
 
 ```
-STEP 0 → Read STATE. Unfinished task? Ask user.
-STEP 1 → Identify modules. Read 3. Журнал/ + 2. Модули/ for them. Large tasks: + 6. Справочник/ + 1. Проект/.
-STEP 1.5 → grep codebase for existing implementations before writing new code.
-STEP 2 → Create plan in STATE (steps = specific actions with file names).
-          Batch: first → ACTIVE, rest → queue.
-STEP 3 → Execute. BEFORE step → move →. AFTER → mark [x].
-STEP 4 → Done → entry in 3. Журнал/. Update 2. Модули/, 5. Планы/, 6. Справочник/ as needed.
-STEP 5 → Rotate STATE: clear, next from queue → ACTIVE → STEP 1.
+STEP 0 → Прочитать STATE. Незавершённая задача? Уточнить у пользователя.
+STEP 1 → Определить модули. По матрице прочитать 3. Журнал + 2. Модули. Крупное: + 6. Справочник + 1. Проект.
+STEP 1.5 → grep по кодовой базе перед написанием нового кода.
+STEP 2 → План в STATE: «Сейчас» + одна строка «→ Следующий шаг:», остальное — «Очередь».
+STEP 3 → Выполнять. Перед шагом — обновить «→ Следующий шаг:». После — двигать дальше.
+STEP 4 → Завершено → запись в 3. Журнал/. Обновить 2. Модули / 5. Планы / 6. Справочник по матрице.
+STEP 5 → Ротация STATE: завершённое в журнал, следующее из очереди → «Сейчас».
 ```
 
-## STATE Read/Write Rules
+## Read/Write Rules
 
-**WRITE to STATE** — BEFORE and AFTER each step, on file change, on decision, on user clarification, every 5 messages forced.
+**ПИСАТЬ в STATE** — перед и после значимого шага, при правке файла, при решении, при уточнении от пользователя, принудительно каждые ~5 сообщений.
 
-**READ STATE** — at first message in dialog, on "continue/дальше", when context details feel missing, before continuing multi-step task.
+**ЧИТАТЬ STATE** — первое сообщение сессии, на «продолжай/дальше», когда контекст ощущается неполным, перед продолжением многошаговой задачи.
 
 ## Recovery After Compaction
 
 ```
-A: Read STATE
-B: Read latest file from 3. Журнал/[current month]/
-C: Read WIP from 4. Активная работа/
-D: compression_count += 1
-E: Find → in plan → execute THAT step
+A: Прочитать STATE
+B: Прочитать свежий файл из 3. Журнал/[текущий месяц]/
+C: Прочитать WIP из 4. Активная работа/
+D: Найти строку «→ Следующий шаг:» → выполнять ИМЕННО его
 ```
+`compression_count` инкрементирует pre-compact хук автоматически (в Desktop без хуков — вручную).
 
-**FORBIDDEN** after recovery: asking "where were we", summarizing done work, changing plan, skipping steps.
+**ЗАПРЕЩЕНО** после восстановления: спрашивать «на чём остановились», пересказывать сделанное, менять план, пропускать шаги.
+**ОБЯЗАТЕЛЬНО:** продолжить со строки `→ Следующий шаг:`, первое сообщение = «Далее — [действие]».
 
-**MANDATORY:** continue from → step, first message = "Далее — [action]".
+## Parallel-Session Safety
 
-## STATE Rotation
+- SESSION_STATE — **один канонический файл**. Дубль не создавать никогда.
+- На старте сессии хук проверяет свежесть `last_updated`: если STATE обновлён ≤10 мин назад — предупреждение о возможной параллельной сессии. Не затирать STATE вслепую; при сомнении уточнить у пользователя.
+- `session_label` в frontmatter — необязательная человекочитаемая метка сессии-владельца.
+- Если vault реорганизовали и STATE «раздвоился» — файл **переносить (`mv`)**, старую копию архивировать в `_state_backups/`, не плодить.
 
-- ACTIVE TASK — always 1 task with details
-- Queue — one-liners, no limit
-- Completed task → entry in 3. Журнал/, delete from STATE
-- Next from queue → expand into ACTIVE TASK
-- Goal: STATE < 80 lines
+## Generic Workflow (оркестрация)
 
-## STATE Validation
-
-Before saving, check: "Следующее действие" contains filename + action, exactly one line with →, `last_updated` is current. Invalid STATE — rewrite.
+Применять, если проект работает через оркестратор + специализированных субагентов:
+- Оркестратор держит STATE/git/секреты; доменную работу делегирует профильным агентам.
+- Крупные задачи — фазами/эпиками; план фаз — в `5. Планы/`.
+- После рабочего агента — ревью-гейт (review/QA), затем фиксация в журнале.
+- **Узкий скоуп:** готовые/«хорошие» файлы правят точечно (`Edit`), без широких «redesign/cleanup» проходов, иначе теряются прежние правки.
 
 ## Token Economy
 
-### grep-before-implement (saves 70K tokens per incident)
-
-**BEFORE writing new code or feature:**
-```
-grep -r "keyword" src/        # 100 tokens
-read found files               # 2K tokens
-ask user if unclear            # 500 tokens
-# TOTAL: ~2.6K vs 70K if building what already exists
-```
-
-**RULE:** Never implement functionality without searching codebase first.
-
-### Minimize CLI output waste
-
-- Use `--quiet`, `--no-verbose`, `| tail -n 20` for build/test commands
-- Don't output entire files when specific lines are needed
-- `grep -n` for line numbers, then read only needed range
-
-### Post-compaction safety
-
-After compaction, behavior may shift from careful (Read→Read→Read→Edit) to risky (Edit→Edit). Before any Edit after compaction:
-1. Read STATE — what was already investigated?
-2. Read "Проверено/Найдено" section — which files/code were already found?
-3. Only then proceed with changes
+- **grep-before-implement** — никогда не писать новый код без поиска существующего (≈100 токенов vs ~70K на дубль).
+- `--quiet`, `| tail -n 20` для build/test; `grep -n` → читать только нужный диапазон; не выводить файлы целиком.
+- После сжатия — перед любым Edit перечитать «Заметки/контекст» в STATE: что уже найдено/проверено.
 
 ## Additional Resources
 
-- **`references/project-rules.md`** — project-specific critical rules template
-- **`references/templates.md`** — entry templates for vault folders (3. Журнал/, 5. Планы/, 2. Модули/)
+- `references/routing-matrix.md` — расширенная матрица «когда что читать/писать» с примерами.
+- `references/templates.md` — шаблоны записей для `3. Журнал/`, `5. Планы/`, `2. Модули/`.
+- `references/project-rules.md` — пустой шаблон критичных правил под конкретный проект (живёт в project CLAUDE.md).
