@@ -105,7 +105,7 @@ echo
 settings_file="$HOME/.claude/settings.json"
 cat > "$settings_file" << 'EOF'
 {
-  "compactPrompt": "When compacting context, ALWAYS preserve in summary:\n1. Path to SESSION_STATE.md (from project CLAUDE.md)\n2. Current plan step (line with → from SESSION_STATE)\n3. All changed file names in this session\n4. All decisions with reasoning\n5. Verbatim user requirements affecting current task\n6. task_id of current task\n7. Instruction: AFTER COMPACTION first read SESSION_STATE.md and CLAUDE.md section 4, then continue from step marked with →\n\nDO NOT preserve: contents of vault files (can be re-read), intermediate reasoning, code already saved to files."
+  "compactPrompt": "При сжатии контекста ОБЯЗАТЕЛЬНО сохрани в summary:\n1. Путь к SESSION_STATE.md (из project CLAUDE.md)\n2. Текущий шаг — строка '→ Следующий шаг:' из SESSION_STATE\n3. Все имена изменённых файлов этой сессии\n4. Все принятые решения с обоснованием\n5. Дословные требования пользователя по текущей задаче\n6. task_id текущей задачи\n7. Инструкция: ПОСЛЕ СЖАТИЯ сначала прочитать SESSION_STATE.md и Continuity-блок в CLAUDE.md, затем продолжить со строки '→ Следующий шаг:'\n\nНЕ сохранять: содержимое файлов vault (перечитываются), промежуточные рассуждения, код уже записанный в файлы."
 }
 EOF
 
